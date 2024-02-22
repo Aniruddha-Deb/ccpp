@@ -89,11 +89,11 @@ static int check_type(void);
 "_Thread_local"                         { return THREAD_LOCAL; }
 "__func__"                              { return FUNC_NAME; }
 
-{L}{A}*					{ yylval.id = strdup(yytext); return check_type(); }
+{L}{A}*					{ yylval.str = strdup(yytext); return check_type(); }
 
-{HP}{H}+{IS}?				{ yylval.n = strtol(yytext, NULL, 0); return I_CONSTANT; }
-{NZ}{D}*{IS}?				{ yylval.n = strtol(yytext, NULL, 0); return I_CONSTANT; }
-"0"{O}*{IS}?				{ yylval.n = strtol(yytext, NULL, 0); return I_CONSTANT; }
+{HP}{H}+{IS}?				{ yylval.str = strdup(yytext); return I_CONSTANT; }
+{NZ}{D}*{IS}?				{ yylval.str = strdup(yytext); return I_CONSTANT; }
+"0"{O}*{IS}?				{ yylval.str = strdup(yytext); return I_CONSTANT; }
 {CP}?"'"([^'\\\n]|{ES})+"'"		{ return I_CONSTANT; }
 
 {D}+{E}{FS}?				{ return F_CONSTANT; }
@@ -103,7 +103,7 @@ static int check_type(void);
 {HP}{H}*"."{H}+{P}{FS}?			{ return F_CONSTANT; }
 {HP}{H}+"."{P}{FS}?			{ return F_CONSTANT; }
 
-({SP}?\"([^"\\\n]|{ES})*\"{WS}*)+	{ yylval.s = strdup(yytext); return STRING_LITERAL; }
+({SP}?\"([^"\\\n]|{ES})*\"{WS}*)+	{ yylval.str = strdup(yytext); return STRING_LITERAL; }
 
 "..."					{ return ELLIPSIS; }
 ">>="					{ return RIGHT_ASSIGN; }

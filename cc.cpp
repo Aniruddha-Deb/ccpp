@@ -36,6 +36,8 @@ main(int argc, char **argv)
       for (auto p : f->parameters->params) {
           std::cout << p->type->name << " " << p->name << std::endl;
       }
+      std::cout << "statements:" << std::endl;
+      std::cout << f->statement_block->statements.size() << std::endl;
   }
   printf("retv = %d\n", ret);
   exit(0);
