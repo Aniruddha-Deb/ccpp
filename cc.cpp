@@ -24,12 +24,13 @@ main(int argc, char **argv)
   char const *filename = argv[1];
   yyin = fopen(filename, "r");
   assert(yyin);
-  ASTTranslationUnit** tu_ptr;
+  ast::TranslationUnit** tu_ptr;
   int ret = yyparse(tu_ptr);
-  ASTTranslationUnit* tu = *tu_ptr;
+  ast::TranslationUnit* tu = *tu_ptr;
 
   std::cout << std::endl;
 
+  /*
   for (auto f : tu->m_functions) {
       std::cout << "function: " << f->return_type->name << " " << f->name << std::endl;
       std::cout << "params:" << std::endl;
@@ -39,6 +40,7 @@ main(int argc, char **argv)
       std::cout << "statements:" << std::endl;
       std::cout << f->statement_block->statements.size() << std::endl;
   }
+  */
   printf("retv = %d\n", ret);
   exit(0);
 }

@@ -16,17 +16,17 @@ void yyerror(const char *s);
 %}
 
 %union {
-    ASTTranslationUnit* ast_translation_unit;
-    ASTStatement* ast_statement;
-    ASTBlockStatement* ast_block_statement;
-    ASTFunction* ast_function;
-    ASTParameterList* ast_parameter_list;
-    ASTParameter* ast_parameter;
-    ASTType* ast_type;
+    ast::TranslationUnit*  ast_translation_unit;
+    ast::Statement*        ast_statement;
+    ast::BlockStatement*   ast_block_statement;
+    ast::Function*         ast_function;
+    ast::Parameter*        ast_parameter;
+    ast::Type*             ast_type;
+    ast::Expression*       ast_expression;
+    ast::BinaryExpression* ast_binary_expression;
+    ast::Literal*          ast_literal;
 
-    ASTExpression* ast_expression;
-    ASTBinaryExpression* ast_binary_expression;
-    ASTLiteral* ast_literal;
+    vector<ast::Parameter*>* ast_parameter_list;
 
     char *str;
 }
@@ -61,61 +61,61 @@ void yyerror(const char *s);
 %nterm <ast_expression> expression
 %nterm <ast_expression> add_sub_expression
 %nterm <ast_expression> mul_div_expression
-%nterm <ast_literal> unary_expression
+%nterm <ast_expression> unary_expression
 %nterm <ast_block_statement> compound_statement
 
 %start translation_unit
 %%
 
 translation_unit
-	: function_definition { $$ = new ASTTranslationUnit($1); *((ASTTranslationUnit**)YYPARSE_PARAM) = $$; }
-	| translation_unit function_definition { $1->add_function($2); $$ = $1; *((ASTTranslationUnit**)YYPARSE_PARAM) = $$; }
+	: function_definition { $$ = new ast::TranslationUnit(); $$->push_back($1); *((ast::TranslationUnit**)YYPARSE_PARAM) = $$; }
+	| translation_unit function_definition { $$->push_back($2); $$ = $1; *((ast::TranslationUnit**)YYPARSE_PARAM) = $$; }
 	;
 
 function_definition
-	: type_name IDENTIFIER '(' parameter_list ')' compound_statement { $$ = new ASTFunction($1, std::string($2), $4, $6); }
-	| type_name IDENTIFIER '(' ')' compound_statement                { $$ = new ASTFunction($1, std::string($2), nullptr, $5); }
+	: type_name IDENTIFIER '(' parameter_list ')' compound_statement { $$ = new ast::Function{{}, $1, std::string($2), $4, $6}; }
+	| type_name IDENTIFIER '(' ')' compound_statement                { $$ = new ast::Function{{}, $1, std::string($2), nullptr, $5}; }
 	;
 
-type_name : INT  { $$ = new ASTType("int"); }
-          | VOID { $$ = new ASTType("void"); }
+type_name : INT  { $$ = new ast::Type{{}, "int"}; }
+          | VOID { $$ = new ast::Type{{}, "void"}; }
           ;
 
-parameter_list : parameter                    { $$ = new ASTParameterList($1); }
-               | parameter_list ',' parameter { $1->add_parameter($3); $$ = $1; }
+parameter_list : parameter                    { $$ = new vector<ast::Parameter*>(); $$->push_back($1); }
+               | parameter_list ',' parameter { $1->push_back($3); $$ = $1; }
                ;
 
-parameter : type_name IDENTIFIER { $$ = new ASTParameter($1, $2); }
+parameter : type_name IDENTIFIER { $$ = new ast::Parameter{{}, $1, $2}; }
           ;
 
 compound_statement : '{' statement_list '}' { $$ = $2; }
                    ;
 
-statement_list : statement                  { $$ = new ASTBlockStatement($1); }
-               | statement_list statement   { $1->add_statement($2); $$ = $1; }
+statement_list : statement                  { $$ = new ast::BlockStatement(); $$->push_back($1); }
+               | statement_list statement   { $1->push_back($2); $$ = $1; }
                ;
 
-statement : expression ';'      { $$ = new ASTExpressionStatement($1); }
+statement : expression ';'      { $$ = new ast::ExpressionStatement{{}, $1}; }
           | compound_statement  { $$ = $1; }
           ;
 
-expression : IDENTIFIER '=' expression { $$ = new ASTBinaryExpression(new ASTLiteral($1, L_IDENTIFIER), EQUALTO, $3); }
+expression : IDENTIFIER '=' expression { $$ = new ast::BinaryExpression{{}, new ast::Reference{{}, $1}, ast::ASSIGN, $3}; }
            | add_sub_expression        { $$ = $1; }
            ;
 
 add_sub_expression : mul_div_expression                        { $$ = $1; }
-                   | add_sub_expression '+' mul_div_expression { $$ = new ASTBinaryExpression($1, ADD, $3); }
-                   | add_sub_expression '-' mul_div_expression { $$ = new ASTBinaryExpression($1, SUBTRACT, $3); }
+                   | add_sub_expression '+' mul_div_expression { $$ = new ast::BinaryExpression{{}, $1, ast::ADD, $3}; }
+                   | add_sub_expression '-' mul_div_expression { $$ = new ast::BinaryExpression{{}, $1, ast::SUB, $3}; }
                    ;
 
 mul_div_expression : unary_expression                          { $$ = $1; }
                    | '(' add_sub_expression ')'                { $$ = $2; }
-                   | mul_div_expression '*' unary_expression   { $$ = new ASTBinaryExpression($1, MULTIPLY, $3); }
-                   | mul_div_expression '/' unary_expression   { $$ = new ASTBinaryExpression($1, DIVIDE, $3); }
+                   | mul_div_expression '*' unary_expression   { $$ = new ast::BinaryExpression{{}, $1, ast::MUL, $3}; }
+                   | mul_div_expression '/' unary_expression   { $$ = new ast::BinaryExpression{{}, $1, ast::DIV, $3}; }
                    ;
 
-unary_expression : IDENTIFIER { $$ = new ASTLiteral($1, L_IDENTIFIER); }
-                 | I_CONSTANT { $$ = new ASTLiteral($1, L_INTEGER); }
+unary_expression : IDENTIFIER { $$ = new ast::Reference{{}, $1}; }
+                 | I_CONSTANT { $$ = new ast::Literal{{}, $1}; }
 
 %%
 #include <stdio.h>
