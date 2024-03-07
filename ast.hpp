@@ -44,6 +44,15 @@ struct ExpressionStatement : Statement {
     Expression* expr;
 };
 
+struct Declaration : Node {
+    Type* type;
+    string name;
+};
+
+struct DeclarationStatement : Statement {
+    Declaration* decl;
+};
+
 struct BlockStatement : Statement, vector<Statement*> {};
 
 struct Parameter : Node {

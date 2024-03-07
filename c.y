@@ -23,6 +23,7 @@ void yyerror(const char *s);
     ast::Parameter*        ast_parameter;
     ast::Type*             ast_type;
     ast::Expression*       ast_expression;
+    ast::Declaration*      ast_declaration;
     ast::BinaryExpression* ast_binary_expression;
     ast::Literal*          ast_literal;
 
@@ -58,6 +59,7 @@ void yyerror(const char *s);
 %nterm <ast_type>  type_name
 %nterm <ast_block_statement> statement_list
 %nterm <ast_statement> statement
+%nterm <ast_declaration> declaration
 %nterm <ast_expression> expression
 %nterm <ast_expression> add_sub_expression
 %nterm <ast_expression> mul_div_expression
@@ -78,6 +80,9 @@ function_definition
 	;
 
 type_name : INT  { $$ = new ast::Type{{}, "int"}; }
+          | CHAR { $$ = new ast::Type{{}, "char"}; }
+          | FLOAT { $$ = new ast::Type{{}, "float"}; }
+          | DOUBLE { $$ = new ast::Type{{}, "double"}; }
           | VOID { $$ = new ast::Type{{}, "void"}; }
           ;
 
@@ -95,9 +100,12 @@ statement_list : statement                  { $$ = new ast::BlockStatement(); $$
                | statement_list statement   { $1->push_back($2); $$ = $1; }
                ;
 
-statement : expression ';'      { $$ = new ast::ExpressionStatement{{}, $1}; }
+statement : declaration ';'     { $$ = new ast::DeclarationStatement{{}, $1}; }
+          | expression ';'      { $$ = new ast::ExpressionStatement{{}, $1}; }
           | compound_statement  { $$ = $1; }
           ;
+
+declaration : type_name IDENTIFIER { $$ = new ast::Declaration{{}, $1, $2}; }
 
 expression : IDENTIFIER '=' expression { $$ = new ast::BinaryExpression{{}, new ast::Reference{{}, $1}, ast::ASSIGN, $3}; }
            | add_sub_expression        { $$ = $1; }
