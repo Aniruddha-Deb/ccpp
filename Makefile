@@ -1,6 +1,6 @@
 # -lfl doesn't work on MacOS! https://stackoverflow.com/questions/21298097/library-not-found-for-lfl
 CCFLAGS=-lm -ll
-BISON=bison # bison 3.8: /opt/homebrew/opt/bison/bin/bison
+BISON=/opt/homebrew/opt/bison/bin/bison
 OS := $(shell uname)
 ifneq ($(OS),Darwin)
 	CCFLAGS += -lfl

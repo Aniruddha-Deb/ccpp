@@ -5,8 +5,8 @@
 #include "ast.hpp"
 #include "c.tab.hpp"
 
-extern "C" int yylex();
-int yyparse(void* tu);
+// extern "C" int yylex();
+// int yyparse(void* tu);
 extern "C" FILE *yyin;
 
 static void usage()
@@ -24,13 +24,12 @@ main(int argc, char **argv)
   char const *filename = argv[1];
   yyin = fopen(filename, "r");
   assert(yyin);
-  ast::TranslationUnit** tu_ptr;
-  int ret = yyparse(tu_ptr);
-  ast::TranslationUnit* tu = *tu_ptr;
+  ast::TranslationUnit tu;
+  int ret = yyparse(&tu);
 
   std::cout << std::endl;
 
-  std::cout << tu->dump_ast("") << std::endl;
+  std::cout << tu.dump_ast("") << std::endl;
 
   /*
   for (auto f : tu->m_functions) {

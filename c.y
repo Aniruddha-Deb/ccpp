@@ -8,12 +8,13 @@ using namespace std;
 extern "C" int yylex();
 extern "C" FILE *yyin;
  
-#define YYPARSE_PARAM tu
 // #define YYDEBUG 1
 // #define YYERROR_VERBOSE 1
-void yyerror(const char *s);
+void yyerror(ast::TranslationUnit* tu, const char *s);
 
 %}
+
+%parse-param {ast::TranslationUnit* tu}
 
 %union {
     ast::TranslationUnit*  ast_translation_unit;
@@ -69,7 +70,6 @@ void yyerror(const char *s);
 
 %nterm <ast_expression> primary_expression
 %nterm <ast_expression> constant
-%nterm <ast_expression> enumeration_constant
 %nterm <ast_expression> string
 %nterm <ast_expression> postfix_expression
 %nterm <ast_expression> unary_expression
@@ -97,8 +97,8 @@ void yyerror(const char *s);
 %%
 
 translation_unit
-	: function_definition { $$ = new ast::TranslationUnit(); $$->push_back($1); *((ast::TranslationUnit**)YYPARSE_PARAM) = $$; }
-	| translation_unit function_definition { $$->push_back($2); $$ = $1; *((ast::TranslationUnit**)YYPARSE_PARAM) = $$; }
+	: function_definition { $$ = new ast::TranslationUnit(); $$->push_back($1); *tu = *$$; }
+	| translation_unit function_definition { $$->push_back($2); $$ = $1; *tu = *$$; }
 	;
 
 function_definition
@@ -321,7 +321,7 @@ unary_expression : IDENTIFIER { $$ = new ast::Reference{{}, $1}; }
 %%
 #include <stdio.h>
 
-void yyerror(const char *s)
+void yyerror(ast::TranslationUnit* tu, const char *s)
 {
 	fflush(stdout);
 	fprintf(stderr, "*** %s\n", s);
