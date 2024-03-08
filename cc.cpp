@@ -30,7 +30,7 @@ main(int argc, char **argv)
 
   std::cout << std::endl;
 
-  std::cout << tu->dump_ast(0) << std::endl;
+  std::cout << tu->dump_ast("") << std::endl;
 
   /*
   for (auto f : tu->m_functions) {

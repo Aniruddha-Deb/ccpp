@@ -75,7 +75,7 @@ enum LiteralType {
 string op2str(Operator op);
 
 struct Node {
-    virtual string dump_ast(int depth) = 0;
+    virtual string dump_ast(string prefix) = 0;
 };
 
 struct Type : Node {
@@ -83,9 +83,8 @@ struct Type : Node {
 
     Type(string _name) : name(_name) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- type: " + name + "\n";
+    string dump_ast(string prefix) {
+        return name;
     }
 };
 
@@ -97,9 +96,8 @@ struct Identifier : Expression {
     
     Identifier(string _name) : name(_name) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- id: " + name + "\n";
+    string dump_ast(string prefix) {
+        return name;
     }
 };
 
@@ -113,12 +111,11 @@ struct TernaryExpression : Expression {
     TernaryExpression(Expression* _cond, Expression* _true_branch, Expression* _false_branch) : 
         cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- op: ?: (ternary operator)\n" +
-               pad_str + "`- cond:\n" + cond->dump_ast(depth+2) +
-               pad_str + "`- true_branch:\n" + true_branch->dump_ast(depth+2) +
-               pad_str + "`- false_branch:\n" + false_branch->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        return          "ternary_op\n" +
+               prefix + "`- cond: " + cond->dump_ast(prefix + "|  ") + "\n" + 
+               prefix + "`- true_branch: " + true_branch->dump_ast(prefix + "|  ") + "\n" + 
+               prefix + "`- false_branch: " + false_branch->dump_ast(prefix + "   ");
     }
 };
 
@@ -128,12 +125,10 @@ struct TypecastExpression : Expression {
 
     TypecastExpression(Type* _typ, Expression* _expr) : typ(_typ), expr(_expr) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- op: (type) (type cast)\n" +
-               pad_str + "`- type:\n" + typ->dump_ast(depth+2) +
-               pad_str + "`- expr:\n" + expr->dump_ast(depth+2) +
-               "\n";
+    string dump_ast(string prefix) {
+        return          "typecast\n" +
+               prefix + "`- type: " + typ->dump_ast(prefix + "|  ") + "\n" +
+               prefix + "`- expr: " + expr->dump_ast(prefix + "   ");
     }
 };
 
@@ -147,14 +142,20 @@ struct FunctionInvocationExpression : Expression {
     FunctionInvocationExpression(Expression* _fn, vector<Expression*>* _params) : 
         fn(_fn), params(_params) {}
     
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        string result = pad_str + "`- fn: \n" + fn->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        string result =          "fn_call\n" + 
+                        prefix + "`- fn: " + fn->dump_ast(prefix + "|  ");
         if (params) {
-            result += pad_str + "`- parameters:\n";
-            for (Expression* expr : *params) {
-                result += expr->dump_ast(depth+2);
+            string param_str = "params:\n";
+            int i=0;
+            auto param = (*params)[i];
+            while (i<params->size()-1) {
+                param_str += prefix + "   " + "`- " + param->dump_ast(prefix + "   |  ") + "\n";
+                i++;
+                param = (*params)[i];
             }
+            param_str += prefix + "   " + "`- " + param->dump_ast(prefix + "      ");
+            result += "\n" + prefix + "`- " + param_str;
         }
         return result;
     }
@@ -166,10 +167,9 @@ struct TypeExpression: Expression {
 
     TypeExpression(Operator _op, Type* _typ) : op(_op), typ(_typ) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- op: " + op2str(op) + "\n" +
-               pad_str + "`- type:\n" + typ->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        return           op2str(op) + "\n" + 
+               prefix + "`- type: " + typ->dump_ast(prefix + "   ");
     }
 };
 
@@ -180,11 +180,10 @@ struct BinaryExpression : Expression {
 
     BinaryExpression(Expression* _lhs, Operator _op, Expression* _rhs) : lhs(_lhs), op(_op), rhs(_rhs) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + op2str(op) + "\n" +
-               pad_str + "`- lhs:\n" + lhs->dump_ast(depth+2) +
-               pad_str + "`- rhs:\n" + rhs->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        return           op2str(op) + "\n" +
+               prefix + "`- lhs: " + lhs->dump_ast(prefix + "|  ") + "\n" + 
+               prefix + "`- rhs: " + rhs->dump_ast(prefix + "   ");
     }
 };
 
@@ -194,10 +193,9 @@ struct UnaryExpression : Expression {
 
     UnaryExpression(Operator _op, Expression* _expr) : op(_op), expr(_expr) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + op2str(op) + "\n" +
-               pad_str + "`- expr:\n" + expr->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        return           op2str(op) + "\n" +
+               prefix + "`- expr: " + expr->dump_ast(prefix + "   ");
     }
 };
 
@@ -209,9 +207,8 @@ struct Literal : Expression {
         // TODO parse literal to int/float etc
     }
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- literal: " + value + " (" + to_string(ltype) + ")\n";
+    string dump_ast(string prefix) {
+        return "literal (" + value + ")";
     }
 };
 
@@ -222,9 +219,8 @@ struct ExpressionStatement : Statement {
 
     ExpressionStatement(Expression* _expr): expr(_expr) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- expr:\n" + expr->dump_ast(depth+2) + "\n";
+    string dump_ast(string prefix) {
+        return "expr: " + expr->dump_ast(prefix);
     }
 };
 
@@ -237,13 +233,16 @@ struct IfStatement : Statement {
     IfStatement(Expression* _cond, Statement* _true_branch, Statement* _false_branch):
         cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        string retval = pad_str + "if\n" +
-               pad_str + "`- cond:\n" + cond->dump_ast(depth+2) +
-               pad_str + "`- true_branch:\n" + true_branch->dump_ast(depth+2);
-        if (false_branch)
-               retval += pad_str + "`- false_branch:\n" + false_branch->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        string retval = "if\n" +
+               prefix + "`- cond: " + cond->dump_ast(prefix + "|  ") + "\n";
+        if (false_branch) {
+            retval += prefix + "`- true_branch: " + true_branch->dump_ast(prefix + "|  ") + "\n";
+            retval += prefix + "`- false_branch: " + false_branch->dump_ast(prefix + "   ");
+        }
+        else {
+            retval += prefix + "`- true_branch: " + true_branch->dump_ast(prefix + "   ");
+        }
         return retval;
     }
 };
@@ -255,11 +254,10 @@ struct WhileStatement : Statement {
 
     WhileStatement(Expression* _cond, Statement* _stmt): cond(_cond), stmt(_stmt) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "while\n" +
-               pad_str + "`- cond:\n" + cond->dump_ast(depth+2) +
-               pad_str + "`- stmt:\n" + stmt->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        return          "while\n" +
+               prefix + "`- cond: " + cond->dump_ast(prefix + "|  ") + "\n" + 
+               prefix + "`- stmt: " + stmt->dump_ast(prefix + "   ");
     }
 };
 
@@ -269,11 +267,10 @@ struct ReturnStatement : Statement {
 
     ReturnStatement(Expression* _ret_expr): ret_expr(_ret_expr) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
+    string dump_ast(string prefix) {
         if (ret_expr)
-            return pad_str + "return \n" + ret_expr->dump_ast(depth+2);
-        return pad_str + "return\n";
+            return "return\n" + prefix + "`- expr: " + ret_expr->dump_ast(prefix + "   ");
+        return "return";
     }
 };
 
@@ -283,10 +280,9 @@ struct Declaration : Node {
 
     Declaration(Type* _typ, string _name) : typ(_typ), name(_name) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- type:\n" + typ->dump_ast(depth+2) +
-               pad_str + "`- name: " + name + "\n";
+    string dump_ast(string prefix) {
+        return           name + "\n" +
+               prefix + "`- type: " + typ->dump_ast(prefix + "   ");
     }
 };
 
@@ -295,20 +291,26 @@ struct DeclarationStatement : Statement {
 
     DeclarationStatement(Declaration* _decl) : decl(_decl) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- decl:\n" + decl->dump_ast(depth+2) + "\n";
+    string dump_ast(string prefix) {
+        return "decl: " + decl->dump_ast(prefix);
     }
 };
 
 struct BlockStatement : Statement, vector<Statement*> {
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        string result = pad_str + "`- block:\n";
-        for (Statement* stmt : *this) {
-            result += stmt->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        if (this->size() == 0) {
+            return "block (empty)";
         }
-        return result + "\n";
+        string result = "block:\n";
+        int i=0;
+        auto stmt = (*this)[i];
+        while (i<this->size()-1) {
+            result += prefix + "`- " + stmt->dump_ast(prefix + "|  ") + "\n";
+            i++;
+            stmt = (*this)[i];
+        }
+        result += prefix + "`- " + stmt->dump_ast(prefix + "   ");
+        return result;
     }
 };
 
@@ -318,10 +320,9 @@ struct Parameter : Node {
 
     Parameter(Type* _typ, string _name) : typ(_typ), name(_name) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- type:\n" + typ->dump_ast(depth+2) +
-               pad_str + "`- name: " + name + "\n";
+    string dump_ast(string prefix) {
+        return           name + "\n" + 
+               prefix + "`- type: " + typ->dump_ast(prefix + "   ");
     }
 };
 
@@ -334,30 +335,42 @@ struct Function : Node {
     Function(Type* _return_type, string _name, vector<Parameter*>* _parameters, BlockStatement* _stmts):
         return_type(_return_type), name(_name), parameters(_parameters), statement_block(_stmts) {}
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        string result = pad_str + "`- function: " + name + "\n" +
-                        pad_str + "`- return_type:\n" + return_type->dump_ast(depth+2);
+    string dump_ast(string prefix) {
+        string result = "function: " + name + "\n" +
+                        prefix + "`- return_type: " + return_type->dump_ast(prefix + "|  ");
         if (parameters) {
-            result += pad_str + "`- parameters:\n";
-            for (Parameter* param : *parameters) {
-                result += param->dump_ast(depth+2);
+            string params = "parameters:\n";
+            int i=0;
+            auto param = (*parameters)[i];
+            while (i<parameters->size()-1) {
+                params += prefix + "|  " + "`- " + param->dump_ast(prefix + "|  |  ") + "\n";
+                i++;
+                param = (*parameters)[i];
             }
+            params += prefix + "|  " + "`- " + param->dump_ast(prefix + "|     ");
+            result += "\n" + prefix + "`- " + params;
         }
-        result += pad_str + "`- body:\n" + statement_block->dump_ast(depth+2);
+        result += "\n" + prefix + "`- " + statement_block->dump_ast(prefix + "   ");
         return result;
     }
 };
 
 struct TranslationUnit : Node, vector<Function*> {
 
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        string result = pad_str + "translation unit:\n";
-        for (Function* func : *this) {
-            result += func->dump_ast(depth);
+    string dump_ast(string prefix) {
+        if (this->size() == 0) {
+            return "translation_unit (empty)";
         }
-        return result + "\n";
+        string result = "translation_unit:\n";
+        int i=0;
+        auto fn = (*this)[i];
+        while (i<this->size()-1) {
+            result += prefix + "`- " + fn->dump_ast(prefix + "|  ") + "\n";
+            i++;
+            fn = (*this)[i];
+        }
+        result += prefix + "`- " + fn->dump_ast(prefix + "   ");
+        return result;
     }
 };
 } // namespace ast
