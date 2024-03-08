@@ -29,6 +29,7 @@ void yyerror(const char *s);
     ast::Operator          ast_operator;
 
     vector<ast::Parameter*>* ast_parameter_list;
+    vector<ast::Expression*>* ast_expression_list;
 
     char *str;
 }
@@ -59,8 +60,11 @@ void yyerror(const char *s);
 %nterm <ast_parameter>  parameter
 %nterm <ast_type>  type_name
 %nterm <ast_block_statement> statement_list
-%nterm <ast_statement> statement
 %nterm <ast_block_statement> compound_statement
+%nterm <ast_statement> statement
+%nterm <ast_statement> selection_statement
+%nterm <ast_statement> iteration_statement
+%nterm <ast_statement> jump_statement
 %nterm <ast_declaration> declaration
 
 %nterm <ast_expression> primary_expression
@@ -68,7 +72,6 @@ void yyerror(const char *s);
 %nterm <ast_expression> enumeration_constant
 %nterm <ast_expression> string
 %nterm <ast_expression> postfix_expression
-%nterm <ast_expression> argument_expression_list
 %nterm <ast_expression> unary_expression
 %nterm <ast_expression> cast_expression
 %nterm <ast_expression> multiplicative_expression
@@ -84,6 +87,8 @@ void yyerror(const char *s);
 %nterm <ast_expression> conditional_expression
 %nterm <ast_expression> assignment_expression
 %nterm <ast_expression> expression
+
+%nterm <ast_expression_list> argument_expression_list
 
 %nterm <ast_operator> unary_operator
 %nterm <ast_operator> assignment_operator
@@ -124,10 +129,27 @@ statement_list : statement                  { $$ = new ast::BlockStatement(); $$
 
 statement : declaration ';'     { $$ = new ast::DeclarationStatement($1); }
           | expression ';'      { $$ = new ast::ExpressionStatement($1); }
+          | selection_statement { $$ = $1; }
+          | iteration_statement { $$ = $1; }
+          | jump_statement      { $$ = $1; }
           | compound_statement  { $$ = $1; }
           ;
 
 declaration : type_name IDENTIFIER { $$ = new ast::Declaration($1, $2); }
+
+selection_statement
+	: IF '(' expression ')' statement ELSE statement { $$ = new ast::IfStatement($3, $5, $7); }
+	| IF '(' expression ')' statement { $$ = new ast::IfStatement($3, $5, nullptr); }
+	;
+
+iteration_statement
+	: WHILE '(' expression ')' statement { $$ = new ast::WhileStatement($3, $5); }
+	;
+
+jump_statement
+	: RETURN ';' { $$ = new ast::ReturnStatement(nullptr); }
+	| RETURN expression ';' { $$ = new ast::ReturnStatement($2); }
+        ;
 
 /* Expressions 
    Taken from the original C grammar */
@@ -152,8 +174,8 @@ string
 postfix_expression
     : primary_expression { $$ = $1; }
     | postfix_expression '[' expression ']'
-    | postfix_expression '(' ')'
-    | postfix_expression '(' argument_expression_list ')'
+    | postfix_expression '(' ')' { $$ = new ast::FunctionInvocationExpression($1); }
+    | postfix_expression '(' argument_expression_list ')' { $$ = new ast::FunctionInvocationExpression($1, $3); }
     | postfix_expression '.' IDENTIFIER
     | postfix_expression PTR_OP IDENTIFIER
     | postfix_expression INC_OP { $$ = new ast::UnaryExpression(ast::OP_POST_INCR, $1); }
@@ -161,8 +183,8 @@ postfix_expression
     ;
 
 argument_expression_list
-    : assignment_expression { $$ = $1; }
-    | argument_expression_list ',' assignment_expression
+    : assignment_expression { $$ = new vector<ast::Expression*>(); $$->push_back($1); }
+    | argument_expression_list ',' assignment_expression { $1->push_back($3); $$ = $1; }
     ;
 
 unary_expression

@@ -137,6 +137,29 @@ struct TypecastExpression : Expression {
     }
 };
 
+struct FunctionInvocationExpression : Expression {
+
+    Expression* fn; // since a function invocation need not be a string 
+                    // eg arr_fn_ptr[0](foo);
+    vector<Expression*>* params;
+
+    FunctionInvocationExpression(Expression* _fn) : fn(_fn) {}
+    FunctionInvocationExpression(Expression* _fn, vector<Expression*>* _params) : 
+        fn(_fn), params(_params) {}
+    
+    string dump_ast(int depth) {
+        string pad_str(depth, ' ');
+        string result = pad_str + "`- fn: \n" + fn->dump_ast(depth+2);
+        if (params) {
+            result += pad_str + "`- parameters:\n";
+            for (Expression* expr : *params) {
+                result += expr->dump_ast(depth+2);
+            }
+        }
+        return result;
+    }
+};
+
 struct TypeExpression: Expression {
     Operator op;
     Type* typ;
@@ -159,7 +182,7 @@ struct BinaryExpression : Expression {
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
-        return pad_str + "`- op: " + op2str(op) + "\n" +
+        return pad_str + op2str(op) + "\n" +
                pad_str + "`- lhs:\n" + lhs->dump_ast(depth+2) +
                pad_str + "`- rhs:\n" + rhs->dump_ast(depth+2);
     }
@@ -173,7 +196,7 @@ struct UnaryExpression : Expression {
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
-        return pad_str + "`- op: " + op2str(op) + "\n" +
+        return pad_str + op2str(op) + "\n" +
                pad_str + "`- expr:\n" + expr->dump_ast(depth+2);
     }
 };
@@ -202,6 +225,55 @@ struct ExpressionStatement : Statement {
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
         return pad_str + "`- expr:\n" + expr->dump_ast(depth+2) + "\n";
+    }
+};
+
+struct IfStatement : Statement {
+
+    Expression* cond;
+    Statement* true_branch;
+    Statement* false_branch;
+
+    IfStatement(Expression* _cond, Statement* _true_branch, Statement* _false_branch):
+        cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {}
+
+    string dump_ast(int depth) {
+        string pad_str(depth, ' ');
+        string retval = pad_str + "if\n" +
+               pad_str + "`- cond:\n" + cond->dump_ast(depth+2) +
+               pad_str + "`- true_branch:\n" + true_branch->dump_ast(depth+2);
+        if (false_branch)
+               retval += pad_str + "`- false_branch:\n" + false_branch->dump_ast(depth+2);
+        return retval;
+    }
+};
+
+struct WhileStatement : Statement {
+
+    Expression* cond;
+    Statement* stmt;
+
+    WhileStatement(Expression* _cond, Statement* _stmt): cond(_cond), stmt(_stmt) {}
+
+    string dump_ast(int depth) {
+        string pad_str(depth, ' ');
+        return pad_str + "while\n" +
+               pad_str + "`- cond:\n" + cond->dump_ast(depth+2) +
+               pad_str + "`- stmt:\n" + stmt->dump_ast(depth+2);
+    }
+};
+
+struct ReturnStatement : Statement {
+
+    Expression *ret_expr;
+
+    ReturnStatement(Expression* _ret_expr): ret_expr(_ret_expr) {}
+
+    string dump_ast(int depth) {
+        string pad_str(depth, ' ');
+        if (ret_expr)
+            return pad_str + "return \n" + ret_expr->dump_ast(depth+2);
+        return pad_str + "return\n";
     }
 };
 
@@ -269,7 +341,7 @@ struct Function : Node {
         if (parameters) {
             result += pad_str + "`- parameters:\n";
             for (Parameter* param : *parameters) {
-                result += param->dump_ast(depth+4);
+                result += param->dump_ast(depth+2);
             }
         }
         result += pad_str + "`- body:\n" + statement_block->dump_ast(depth+2);
