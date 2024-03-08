@@ -75,11 +75,18 @@ enum LiteralType {
 string op2str(Operator op);
 
 struct Node {
-    virtual string dump_ast(int depth);
+    virtual string dump_ast(int depth) = 0;
 };
 
 struct Type : Node {
     string name;
+
+    Type(string _name) : name(_name) {}
+
+    string dump_ast(int depth) {
+        string pad_str(depth, ' ');
+        return pad_str + "`- type: " + name + "\n";
+    }
 };
 
 struct Expression : Node {};
@@ -87,6 +94,13 @@ struct Expression : Node {};
 struct Identifier : Expression {
     string name;
     // TODO add symbol table references here 
+    
+    Identifier(string _name) : name(_name) {}
+
+    string dump_ast(int depth) {
+        string pad_str(depth, ' ');
+        return pad_str + "`- id: " + name + "\n";
+    }
 };
 
 // there's only one kind of ternary expression (the conditional), so no need to 
@@ -96,19 +110,23 @@ struct TernaryExpression : Expression {
     Expression* true_branch;
     Expression* false_branch;
 
+    TernaryExpression(Expression* _cond, Expression* _true_branch, Expression* _false_branch) : 
+        cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {}
+
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
         return pad_str + "`- op: ?: (ternary operator)\n" +
                pad_str + "`- cond:\n" + cond->dump_ast(depth+2) +
                pad_str + "`- true_branch:\n" + true_branch->dump_ast(depth+2) +
-               pad_str + "`- false_branch:\n" + false_branch->dump_ast(depth+2) +
-               "\n";
+               pad_str + "`- false_branch:\n" + false_branch->dump_ast(depth+2);
     }
 };
 
 struct TypecastExpression : Expression {
     Type* typ;
     Expression* expr;
+
+    TypecastExpression(Type* _typ, Expression* _expr) : typ(_typ), expr(_expr) {}
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
@@ -123,11 +141,27 @@ struct TypeExpression: Expression {
     Operator op;
     Type* typ;
 
+    TypeExpression(Operator _op, Type* _typ) : op(_op), typ(_typ) {}
+
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
         return pad_str + "`- op: " + op2str(op) + "\n" +
-               pad_str + "`- type:\n" + typ->dump_ast(depth+2) +
-               "\n";
+               pad_str + "`- type:\n" + typ->dump_ast(depth+2);
+    }
+};
+
+struct BinaryExpression : Expression { 
+    Expression* lhs;
+    Operator op;
+    Expression* rhs;
+
+    BinaryExpression(Expression* _lhs, Operator _op, Expression* _rhs) : lhs(_lhs), op(_op), rhs(_rhs) {}
+
+    string dump_ast(int depth) {
+        string pad_str(depth, ' ');
+        return pad_str + "`- op: " + op2str(op) + "\n" +
+               pad_str + "`- lhs:\n" + lhs->dump_ast(depth+2) +
+               pad_str + "`- rhs:\n" + rhs->dump_ast(depth+2);
     }
 };
 
@@ -135,31 +169,26 @@ struct UnaryExpression : Expression {
     Operator op;
     Expression* expr;
 
+    UnaryExpression(Operator _op, Expression* _expr) : op(_op), expr(_expr) {}
+
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
         return pad_str + "`- op: " + op2str(op) + "\n" +
-               pad_str + "`- expr:\n" + expr->dump_ast(depth+2) +
-               "\n";
+               pad_str + "`- expr:\n" + expr->dump_ast(depth+2);
     }
 };
 
 struct Literal : Expression {
     string value;
     LiteralType ltype;
-    // TODO parse literal
+
+    Literal(string _value, LiteralType _ltype): value(_value), ltype(_ltype) {
+        // TODO parse literal to int/float etc
+    }
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
         return pad_str + "`- literal: " + value + " (" + to_string(ltype) + ")\n";
-    }
-};
-
-struct Reference : Expression {
-    string value;
-
-    string dump_ast(int depth) {
-        string pad_str(depth, ' ');
-        return pad_str + "`- reference: " + value + "\n";
     }
 };
 
@@ -168,6 +197,8 @@ struct Statement : Node {};
 struct ExpressionStatement : Statement {
     Expression* expr;
 
+    ExpressionStatement(Expression* _expr): expr(_expr) {}
+
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
         return pad_str + "`- expr:\n" + expr->dump_ast(depth+2) + "\n";
@@ -175,18 +206,22 @@ struct ExpressionStatement : Statement {
 };
 
 struct Declaration : Node {
-    Type* type;
+    Type* typ;
     string name;
+
+    Declaration(Type* _typ, string _name) : typ(_typ), name(_name) {}
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
-        return pad_str + "`- type:\n" + type->dump_ast(depth+2) +
+        return pad_str + "`- type:\n" + typ->dump_ast(depth+2) +
                pad_str + "`- name: " + name + "\n";
     }
 };
 
 struct DeclarationStatement : Statement {
     Declaration* decl;
+
+    DeclarationStatement(Declaration* _decl) : decl(_decl) {}
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
@@ -206,12 +241,14 @@ struct BlockStatement : Statement, vector<Statement*> {
 };
 
 struct Parameter : Node {
-    Type* type;
+    Type* typ;
     string name;
+
+    Parameter(Type* _typ, string _name) : typ(_typ), name(_name) {}
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
-        return pad_str + "`- type:\n" + type->dump_ast(depth+2) +
+        return pad_str + "`- type:\n" + typ->dump_ast(depth+2) +
                pad_str + "`- name: " + name + "\n";
     }
 };
@@ -221,6 +258,9 @@ struct Function : Node {
     string name;
     vector<Parameter*>* parameters;
     BlockStatement* statement_block;
+
+    Function(Type* _return_type, string _name, vector<Parameter*>* _parameters, BlockStatement* _stmts):
+        return_type(_return_type), name(_name), parameters(_parameters), statement_block(_stmts) {}
 
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
@@ -233,16 +273,17 @@ struct Function : Node {
             }
         }
         result += pad_str + "`- body:\n" + statement_block->dump_ast(depth+2);
-        return result + "\n";
+        return result;
     }
 };
 
 struct TranslationUnit : Node, vector<Function*> {
+
     string dump_ast(int depth) {
         string pad_str(depth, ' ');
-        string result = pad_str + "`- translation unit:\n";
+        string result = pad_str + "translation unit:\n";
         for (Function* func : *this) {
-            result += func->dump_ast(depth+2);
+            result += func->dump_ast(depth);
         }
         return result + "\n";
     }

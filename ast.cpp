@@ -1,7 +1,7 @@
 #include "ast.hpp"
 using namespace ast;
 
-string op2str(Operator op) {
+string ast::op2str(Operator op) {
    switch (op) {
        case OP_ADD: return "OP_ADD";
        case OP_SUB: return "OP_SUB";
