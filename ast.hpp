@@ -88,7 +88,9 @@ struct Type : Node {
     }
 };
 
-struct Expression : Node {};
+struct Expression : Node {
+    virtual ~Expression() {}
+};
 
 struct Identifier : Expression {
     string name;
@@ -117,6 +119,12 @@ struct TernaryExpression : Expression {
                prefix + "`- true_branch: " + true_branch->dump_ast(prefix + "|  ") + "\n" + 
                prefix + "`- false_branch: " + false_branch->dump_ast(prefix + "   ");
     }
+
+    ~TernaryExpression() {
+        delete cond;
+        delete true_branch;
+        delete false_branch;
+    }
 };
 
 struct TypecastExpression : Expression {
@@ -129,6 +137,11 @@ struct TypecastExpression : Expression {
         return          "typecast\n" +
                prefix + "`- type: " + typ->dump_ast(prefix + "|  ") + "\n" +
                prefix + "`- expr: " + expr->dump_ast(prefix + "   ");
+    }
+
+    ~TypecastExpression() {
+        delete typ;
+        delete expr;
     }
 };
 
@@ -159,6 +172,14 @@ struct FunctionInvocationExpression : Expression {
         }
         return result;
     }
+
+    ~FunctionInvocationExpression() {
+        delete fn;
+        for (auto expr : *params) {
+            delete expr;
+        }
+        delete params;
+    }
 };
 
 struct TypeExpression: Expression {
@@ -170,6 +191,10 @@ struct TypeExpression: Expression {
     string dump_ast(string prefix) {
         return           op2str(op) + "\n" + 
                prefix + "`- type: " + typ->dump_ast(prefix + "   ");
+    }
+
+    ~TypeExpression() {
+        delete typ;
     }
 };
 
@@ -184,6 +209,11 @@ struct BinaryExpression : Expression {
         return           op2str(op) + "\n" +
                prefix + "`- lhs: " + lhs->dump_ast(prefix + "|  ") + "\n" + 
                prefix + "`- rhs: " + rhs->dump_ast(prefix + "   ");
+    }
+
+    ~BinaryExpression() {
+        delete lhs;
+        delete rhs;
     }
 };
 
@@ -212,7 +242,9 @@ struct Literal : Expression {
     }
 };
 
-struct Statement : Node {};
+struct Statement : Node {
+    virtual ~Statement() {}
+};
 
 struct ExpressionStatement : Statement {
     Expression* expr;
@@ -221,6 +253,10 @@ struct ExpressionStatement : Statement {
 
     string dump_ast(string prefix) {
         return "expr: " + expr->dump_ast(prefix);
+    }
+
+    ~ExpressionStatement() {
+        delete expr;
     }
 };
 
@@ -245,6 +281,12 @@ struct IfStatement : Statement {
         }
         return retval;
     }
+
+    ~IfStatement() {
+        delete cond;
+        delete true_branch;
+        delete false_branch;
+    }
 };
 
 struct WhileStatement : Statement {
@@ -259,6 +301,11 @@ struct WhileStatement : Statement {
                prefix + "`- cond: " + cond->dump_ast(prefix + "|  ") + "\n" + 
                prefix + "`- stmt: " + stmt->dump_ast(prefix + "   ");
     }
+
+    ~WhileStatement() {
+        delete cond;
+        delete stmt;
+    }
 };
 
 struct ReturnStatement : Statement {
@@ -272,6 +319,10 @@ struct ReturnStatement : Statement {
             return "return\n" + prefix + "`- expr: " + ret_expr->dump_ast(prefix + "   ");
         return "return";
     }
+
+    ~ReturnStatement() {
+        delete ret_expr;
+    }
 };
 
 struct Declaration : Node {
@@ -284,6 +335,10 @@ struct Declaration : Node {
         return           name + "\n" +
                prefix + "`- type: " + typ->dump_ast(prefix + "   ");
     }
+
+    ~Declaration() {
+        delete typ;
+    }
 };
 
 struct DeclarationStatement : Statement {
@@ -293,6 +348,10 @@ struct DeclarationStatement : Statement {
 
     string dump_ast(string prefix) {
         return "decl: " + decl->dump_ast(prefix);
+    }
+
+    ~DeclarationStatement() {
+        delete decl;
     }
 };
 
@@ -312,6 +371,12 @@ struct BlockStatement : Statement, vector<Statement*> {
         result += prefix + "`- " + stmt->dump_ast(prefix + "   ");
         return result;
     }
+
+    ~BlockStatement() {
+        for (auto stmt : *this) {
+            delete stmt;
+        }
+    }
 };
 
 struct Parameter : Node {
@@ -323,6 +388,10 @@ struct Parameter : Node {
     string dump_ast(string prefix) {
         return           name + "\n" + 
                prefix + "`- type: " + typ->dump_ast(prefix + "   ");
+    }
+
+    ~Parameter() {
+        delete typ;
     }
 };
 
@@ -353,6 +422,15 @@ struct Function : Node {
         result += "\n" + prefix + "`- " + statement_block->dump_ast(prefix + "   ");
         return result;
     }
+
+    ~Function() {
+        delete return_type;
+        for (auto param : *parameters) {
+            delete param;
+        }
+        delete parameters;
+        delete statement_block;
+    }
 };
 
 struct TranslationUnit : Node, vector<Function*> {
@@ -371,6 +449,12 @@ struct TranslationUnit : Node, vector<Function*> {
         }
         result += prefix + "`- " + fn->dump_ast(prefix + "   ");
         return result;
+    }
+
+    ~TranslationUnit() {
+        for (auto func : *this) {
+            delete func;
+        }
     }
 };
 } // namespace ast
