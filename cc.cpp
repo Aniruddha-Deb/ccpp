@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "ast.hpp"
 #include "c.tab.hpp"
+#include "symboltable.hpp"
 
 // extern "C" int yylex();
 // int yyparse(void* tu);
@@ -24,12 +25,15 @@ main(int argc, char **argv)
   char const *filename = argv[1];
   yyin = fopen(filename, "r");
   assert(yyin);
-  ast::TranslationUnit tu;
-  int ret = yyparse(&tu);
+  ast::TranslationUnit* tu = new ast::TranslationUnit(new vector<ast::Function*>,
+                                                      new vector<ast::DeclarationStatement*>,
+                                                      new vector<bool>);
+  int ret = yyparse(tu);
 
   std::cout << std::endl;
 
-  std::cout << tu.dump_ast("") << std::endl;
+  tu->scopify((symboltable*) 0, (int*) 0);
+  std::cout << tu->dump_ast("") << std::endl;
 
   /*
   for (auto f : tu->m_functions) {

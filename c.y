@@ -97,8 +97,14 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 %%
 
 translation_unit
-	: function_definition { $$ = new ast::TranslationUnit(); $$->push_back($1); *tu = *$$; }
-	| translation_unit function_definition { $$->push_back($2); $$ = $1; *tu = *$$; }
+	: function_definition { $$ = new ast::TranslationUnit(new vector<ast::Function*>, 
+                                                        new vector<ast::DeclarationStatement*>,
+                                                        new vector<bool>); $$->add_function($1); *tu = *$$; }
+  | declaration ';' {  $$ = new ast::TranslationUnit(new vector<ast::Function*>, 
+                                                        new vector<ast::DeclarationStatement*>,
+                                                        new vector<bool>); $$->add_declaration(new ast::DeclarationStatement($1)); *tu = *$$; }
+	| translation_unit function_definition { $1->add_function($2); $$ = $1; *tu = *$$; }
+  | translation_unit declaration ';' {$1->add_declaration(new ast::DeclarationStatement($2)); $$ = $1; *tu = *$$; }
 	;
 
 function_definition
@@ -135,7 +141,7 @@ statement : declaration ';'     { $$ = new ast::DeclarationStatement($1); }
           | compound_statement  { $$ = $1; }
           ;
 
-declaration : type_name IDENTIFIER { $$ = new ast::Declaration($1, $2); }
+declaration : type_name IDENTIFIER { $$ = new ast::Declaration($1, new ast::Identifier($2)); }
 
 selection_statement
 	: IF '(' expression ')' statement ELSE statement { $$ = new ast::IfStatement($3, $5, $7); }
