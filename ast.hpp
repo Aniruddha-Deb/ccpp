@@ -1,6 +1,6 @@
 #pragma once
 
-#include "symboltable.hpp"
+#include "symtab.hpp"
 #include <iostream>
 #include <memory>
 #include <string>

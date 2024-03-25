@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "ast.hpp"
 #include "c.tab.hpp"
-#include "symboltable.hpp"
+#include "symtab.hpp"
 
 // extern "C" int yylex();
 // int yyparse(void* tu);

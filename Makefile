@@ -7,8 +7,8 @@ ifneq ($(OS),Darwin)
 	BISON=bison
 endif
 
-cc: cc.cpp c.tab.cpp c.lex.cpp ast.hpp ast.cpp symboltable.cpp symboltable.hpp
-	g++ -std=c++17 c.tab.cpp c.lex.cpp ast.cpp cc.cpp symboltable.cpp $(CCFLAGS) -o $@
+cc: cc.cpp c.tab.cpp c.lex.cpp ast.hpp ast.cpp symtab.cpp symtab.hpp
+	g++ -std=c++17 c.tab.cpp c.lex.cpp ast.cpp cc.cpp symtab.cpp $(CCFLAGS) -o $@
 
 c.tab.cpp c.tab.hpp: c.y
 	$(BISON) -t -o c.tab.cpp -d c.y

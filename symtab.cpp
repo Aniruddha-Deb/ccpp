@@ -1,5 +1,5 @@
 #include <iostream>
-#include "symboltable.hpp"
+#include "symtab.hpp"
 
 using namespace std;
 
