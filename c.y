@@ -96,69 +96,7 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 %start translation_unit
 %%
 
-translation_unit
-	: function_definition { $$ = new ast::TranslationUnit(new vector<ast::Function*>, 
-                                                        new vector<ast::DeclarationStatement*>,
-                                                        new vector<bool>); $$->add_function($1); *tu = *$$; }
-  | declaration ';' {  $$ = new ast::TranslationUnit(new vector<ast::Function*>, 
-                                                        new vector<ast::DeclarationStatement*>,
-                                                        new vector<bool>); $$->add_declaration(new ast::DeclarationStatement($1)); *tu = *$$; }
-	| translation_unit function_definition { $1->add_function($2); $$ = $1; *tu = *$$; }
-  | translation_unit declaration ';' {$1->add_declaration(new ast::DeclarationStatement($2)); $$ = $1; *tu = *$$; }
-	;
-
-function_definition
-    : type_name IDENTIFIER '(' parameter_list ')' compound_statement { $$ = new ast::Function($1, std::string($2), $4, $6); }
-    | type_name IDENTIFIER '(' ')' compound_statement                { $$ = new ast::Function($1, std::string($2), nullptr, $5); }
-    ;
-
-type_name : INT  { $$ = new ast::Type("int"); }
-          | CHAR { $$ = new ast::Type("char"); }
-          | FLOAT { $$ = new ast::Type("float"); }
-          | DOUBLE { $$ = new ast::Type("double"); }
-          | VOID { $$ = new ast::Type("void"); }
-          ;
-
-parameter_list : parameter                    { $$ = new vector<ast::Parameter*>(); $$->push_back($1); }
-               | parameter_list ',' parameter { $1->push_back($3); $$ = $1; }
-               ;
-
-parameter : type_name IDENTIFIER { $$ = new ast::Parameter($1, $2); }
-
-compound_statement : '{' statement_list '}' { $$ = $2; }
-                   | '{' '}' { $$ = new ast::BlockStatement(); }
-                   ;
-
-statement_list : statement                  { $$ = new ast::BlockStatement(); $$->push_back($1); }
-               | statement_list statement   { $1->push_back($2); $$ = $1; }
-               ;
-
-statement : declaration ';'     { $$ = new ast::DeclarationStatement($1); }
-          | expression ';'      { $$ = new ast::ExpressionStatement($1); }
-          | selection_statement { $$ = $1; }
-          | iteration_statement { $$ = $1; }
-          | jump_statement      { $$ = $1; }
-          | compound_statement  { $$ = $1; }
-          ;
-
-declaration : type_name IDENTIFIER { $$ = new ast::Declaration($1, new ast::Identifier($2)); }
-
-selection_statement
-	: IF '(' expression ')' statement ELSE statement { $$ = new ast::IfStatement($3, $5, $7); }
-	| IF '(' expression ')' statement { $$ = new ast::IfStatement($3, $5, nullptr); }
-	;
-
-iteration_statement
-	: WHILE '(' expression ')' statement { $$ = new ast::WhileStatement($3, $5); }
-	;
-
-jump_statement
-	: RETURN ';' { $$ = new ast::ReturnStatement(nullptr); }
-	| RETURN expression ';' { $$ = new ast::ReturnStatement($2); }
-        ;
-
-/* Expressions 
-   Taken from the original C grammar */
+/* -Expressions-------------------------------------------------------------- */
 
 primary_expression
     : IDENTIFIER { $$ = new ast::Identifier($1); }
@@ -176,7 +114,6 @@ string
     : STRING_LITERAL { $$ = new ast::Literal($1, ast::LT_STRING); }
     ;
 
-/* TODO make expressions for all these things */
 postfix_expression
     : primary_expression { $$ = $1; }
     | postfix_expression '[' expression ']'
@@ -304,25 +241,171 @@ expression
     | expression ',' assignment_expression { $$ = new ast::BinaryExpression($1, ast::OP_SEQ, $3); }
     ;
 
-/*
-expression : IDENTIFIER '=' expression { $$ = new ast::BinaryExpression{{}, new ast::Reference{{}, $1}, ast::OP_ASSIGN, $3}; }
-           | add_sub_expression        { $$ = $1; }
-           ;
+constant_expression
+	: conditional_expression { $$ = $1; } /* with constraints - should we implement those? */
+	;
 
-add_sub_expression : mul_div_expression                        { $$ = $1; }
-                   | add_sub_expression '+' mul_div_expression { $$ = new ast::BinaryExpression{{}, $1, ast::ADD, $3}; }
-                   | add_sub_expression '-' mul_div_expression { $$ = new ast::BinaryExpression{{}, $1, ast::SUB, $3}; }
-                   ;
+/* -Declarations------------------------------------------------------------- */
 
-mul_div_expression : unary_expression                          { $$ = $1; }
-                   | '(' add_sub_expression ')'                { $$ = $2; }
-                   | mul_div_expression '*' unary_expression   { $$ = new ast::BinaryExpression{{}, $1, ast::MUL, $3}; }
-                   | mul_div_expression '/' unary_expression   { $$ = new ast::BinaryExpression{{}, $1, ast::DIV, $3}; }
-                   ;
+declaration
+	: declaration_specifiers ';' { $$ = new Declaration($1); }
+	| declaration_specifiers init_declarator_list ';' { $$ = new Declaration($1, $2); }
+	| static_assert_declaration
+	;
 
-unary_expression : IDENTIFIER { $$ = new ast::Reference{{}, $1}; }
-                 | I_CONSTANT { $$ = new ast::Literal{{}, $1}; }
-*/
+declaration_specifiers
+	: storage_class_specifier declaration_specifiers { $2->add_storage_specifier($1); $$ = $2; }
+	| storage_class_specifier { $$ = new DeclarationSpecifier(); $$->set_type($1); }
+	| type_specifier declaration_specifiers { $2->set_type($1); $$ = $2; }
+	| type_specifier { $$ = new DeclarationSpecifier(); $$->set_type($1); }
+	| type_qualifier declaration_specifiers { $2->add_type_qualifier($1); $$ = $2; }
+	| type_qualifier { $$ = new DeclarationSpecifier(); $$->add_type_qualifier($1); }
+	| function_specifier declaration_specifiers { $2->add_function_specifier($1); $$ = $2; }
+	| function_specifier { $$ = new DeclarationSpecifier(); $$->add_function_specifier($1); }
+	;
+
+init_declarator_list
+	: init_declarator { $$ = new std::vector<InitDeclarator>(); $$->push_back($1); }
+	| init_declarator_list ',' init_declarator { $1->add_declarator($2); $$ = $1; }
+	;
+
+init_declarator
+	: pointer_list IDENTIFIER '=' assignment_expression { $$ = new InitDeclarator($1, $2, $4); }
+	| IDENTIFIER '=' assignment_expression { $$ = new InitDeclarator($1, $3); }
+	| pointer_list IDENTIFIER { $$ = new InitDeclarator($1, $2, nullptr); }
+	| IDENTIFIER { $$ = new InitDeclarator($1, nullptr); }
+	;
+
+pointer_list
+  : '*' pointer_list { $$++; }
+  | '*' { $$ = 1; }
+  ;
+
+storage_class_specifier
+	: TYPEDEF { $$ = ast::SS_TYPEDEF; }
+	| EXTERN { $$ = ast::SS_EXTERN; }
+	| STATIC { $$ = ast::SS_STATIC; }
+	| THREAD_LOCAL { $$ = ast::SS_THREADLOCAL; }
+	| AUTO { $$ = ast::SS_AUTO; }
+	| REGISTER { $$ = ast::SS_REGISTER; }
+	;
+
+type_specifier
+	: VOID { $$ = ast::TS_VOID; }
+	| CHAR { $$ = ast::TS_CHAR; }
+	| SHORT { $$ = ast::TS_SHORT; }
+	| INT { $$ = ast::TS_INT; }
+	| LONG { $$ = ast::TS_LONG; }
+	| FLOAT { $$ = ast::TS_FLOAT; }
+	| DOUBLE { $$ = ast::TS_DOUBLE; }
+	| SIGNED { $$ = ast::TS_SIGNED; }
+	| UNSIGNED { $$ = ast::TS_UNSIGNED; }
+	| BOOL { $$ = ast::TS_BOOL; }
+	| COMPLEX { $$ = ast::TS_COMPLEX; }
+	| IMAGINARY { $$ = ast::TS_IMAGINARY; }
+	;
+
+type_qualifier
+	: CONST { $$ = ast::TQ_CONST; }
+	| RESTRICT { $$ = ast::TQ_RESTRICT; }
+	| VOLATILE { $$ = ast::TQ_VOLATILE; }
+	| ATOMIC { $$ = ast::TQ_ATOMIC; }
+	;
+
+function_specifier
+	: INLINE { $$ = ast::FS_INLINE; }
+	| NORETURN { $$ = ast::FS_NORETURN; }
+	;
+
+function_parameter_list
+	: parameter_list ',' ELLIPSIS { $$ = new FunctionParameterList(true); $$->copy($1->begin(), $1->end()); delete $1; } 
+	| parameter_list { $$ = new FunctionParameterList(false); $$->copy($1->begin(), $1->end()); delete $1; }
+	;
+
+parameter_list
+	: pure_declaration { $$ = new std::vector<PureDeclaration*>(); $$->push_back($1); } 
+	| parameter_list ',' pure_declaration { $1->push_back($3); $$ = $1; } 
+	;
+
+pure_declaration
+	: declaration_specifiers pointer_list IDENTIFIER { $$ = new PureDeclaration($1, $2, new Identifier($3)); } 
+	| declaration_specifiers IDENTIFIER { $$ = new PureDeclaration($1, 0, new Identifier($3)); }
+  ;
+
+/* -Statements--------------------------------------------------------------- */
+
+statement
+	: labeled_statement { $$ = $1; }
+	| compound_statement { $$ = $1; }
+	| expression_statement { $$ = $1; }
+	| selection_statement { $$ = $1; }
+	| iteration_statement { $$ = $1; }
+	| jump_statement { $$ = $1; }
+	;
+
+labeled_statement
+	: IDENTIFIER ':' statement { $$ = new LabeledStatement($1, $3); }
+	| CASE constant_expression ':' statement { $$ = new CaseStatement($2, $4); }
+	| DEFAULT ':' statement { $$ = $3; }
+	;
+
+compound_statement 
+  : '{' block_item_list '}' { $$ = $2; }
+  | '{' '}' { $$ = new ast::BlockStatement(); }
+  ;
+
+block_item_list 
+  : block_item                  { $$ = new ast::BlockStatement(); $$->push_back($1); }
+  | block_item_list block_item  { $1->push_back($2); $$ = $1; }
+
+block_item
+	: declaration { $$ = $1; }
+	| statement   { $$ = $1; }
+	;
+
+expression_statement
+	: ';' { $$ = new ast::ExpressionStatement(nullptr); }
+	| expression ';' { $$ = new ast::ExpressionStatement($1); }
+	;
+
+selection_statement
+	: IF '(' expression ')' statement ELSE statement { $$ = new ast::IfStatement($3, $5, $7); }
+	| IF '(' expression ')' statement { $$ = new ast::IfStatement($3, $5, nullptr); }
+	| SWITCH '(' expression ')' statement { $$ = new ast::SwitchStatement($3, $5); }
+	;
+
+iteration_statement
+	: WHILE '(' expression ')' statement { $$ = new ast::WhileStatement($3, $5); }
+	| DO statement WHILE '(' expression ')' ';' { $$ = new ast::DoWhileStatement($5, $2); }
+	;
+
+jump_statement
+	: GOTO IDENTIFIER ';' { $$ = new ast::GotoStatement($2); }
+	| CONTINUE ';' { $$ = new ast::ContinueStatement(); }
+	| BREAK ';' { $$ = new ast::BreakStatement(); }
+	: RETURN ';' { $$ = new ast::ReturnStatement(nullptr); }
+	| RETURN expression ';' { $$ = new ast::ReturnStatement($2); }
+	;
+
+/* -Translation Unit and Functions------------------------------------------- */
+
+translation_unit
+	: function_definition { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; }
+	: declaration { $$ = new ast::TranslationUnit(); $$->add_declaration($1); *tu = *$$; }
+	| translation_unit function_definition { $1->add_function($2); $$ = $1; *tu = *$$; }
+	| translation_unit declaration { $1->add_declaration($2); $$ = $1; *tu = *$$; }
+	;
+
+function_definition
+  : pure_declaration '(' function_parameter_list ')' compound_statement { $$ = new ast::Function($1, $3, $5); }
+  | pure_declaration '(' ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); }
+  | pure_declaration '(' VOID ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); }
+  ;
+
+function_definition
+    : type_name IDENTIFIER '(' parameter_list ')' compound_statement { $$ = new ast::Function($1, std::string($2), $4, $6); }
+    | type_name IDENTIFIER '(' ')' compound_statement                { $$ = new ast::Function($1, std::string($2), nullptr, $5); }
+    ;
 
 %%
 #include <stdio.h>

@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <set>
 
 using namespace std;
 
@@ -76,6 +77,44 @@ enum LiteralType {
   LT_INT_LIKE,
   LT_FLOAT_LIKE,
   LT_STRING
+};
+
+enum StorageSpecifier {
+  SS_EXTERN,
+  SS_STATIC,
+  SS_THREADLOCAL,
+  SS_AUTO,
+  SS_REGISTER
+};
+
+enum TypeSpecifier {
+  TS_VOID,
+  TS_CHAR,
+  TS_SHORT,
+  TS_INT,
+  TS_LONG,
+  TS_FLOAT,
+  TS_DOUBLE,
+  TS_SIGNED,
+  TS_UNSIGNED,
+  TS_BOOL,
+  TS_COMPLEX,
+  TS_IMAGINARY,
+  TS_STRUCT,
+  TS_UNION,
+  TS_UNDEFINED
+};
+
+enum TypeQualifier {
+  TQ_CONST,
+  TQ_RESTRICT,
+  TQ_VOLATILE,
+  TQ_ATOMIC
+};
+
+enum FunctionSpecifier {
+  FS_INLINE,
+  FS_NORETURN
 };
 
 string op2str(Operator op);
@@ -349,6 +388,21 @@ struct IfStatement : Statement {
   }
 };
 
+struct SwitchStatement : Statement {
+
+  Expression *expr;
+  Statement *stmt;
+
+  // TODO some special codegen for stmt
+  SwitchStatement(Expression* _expr, Statement* _stmt) : expr{_expr}, stmt{_stmt} {}
+
+  ~SwitchStatement() {
+    delete expr;
+    delete stmt;
+  }
+
+};
+
 struct WhileStatement : Statement {
 
   Expression *cond;
@@ -375,6 +429,33 @@ struct WhileStatement : Statement {
   }
 };
 
+// the only difference between this and while is the semantics
+struct DoWhileStatement : Statement {
+
+  Expression *cond;
+  Statement *stmt;
+
+  DoWhileStatement(Expression *_cond, Statement *_stmt)
+      : cond(_cond), stmt(_stmt) {}
+
+  string dump_ast(string prefix) {
+    return "while\n" + prefix + "`- cond: " + cond->dump_ast(prefix + "|  ") +
+           "\n" + prefix + "`- stmt: " + stmt->dump_ast(prefix + "   ");
+  }
+
+  void scopify(symboltable *s, int *new_location) {
+    cond->scopify(s, new_location);
+    s->enter_scope();
+    stmt->scopify(s, new_location);
+    s->exit_scope();
+  }
+
+  ~DoWhileStatement() {
+    delete cond;
+    delete stmt;
+  }
+};
+
 struct ReturnStatement : Statement {
 
   Expression *ret_expr;
@@ -395,9 +476,108 @@ struct ReturnStatement : Statement {
   ~ReturnStatement() { delete ret_expr; }
 };
 
+struct GotoStatement : Statement {
+
+  string label;
+
+  GotoStatement(char* _label) : label(_label) {}
+
+};
+
+struct ContinueStatement : Statement {
+
+};
+
+struct BreakStatement : Statement {
+
+};
+
+struct DeclarationSpecifiers : Node {
+  public:
+  std::set<StorageSpecifier> storage_specs;
+  TypeSpecifier type;
+  std::set<TypeQualifier> type_quals;
+  std::set<FunctionSpecifier> func_specs;
+
+  DeclarationSpecifiers(): storage_specs(), type{TS_UNDEFINED}, type_quals(), func_specs() {}
+
+  void set_type(TypeSpecifier ts) {
+    if (type != TS_UNDEFINED) {
+      cout << "ERROR: redeclaration of type not allowed" << endl;
+    }
+    type = ts;
+  }
+
+  void add_storage_specifier(StorageSpecifier ss) {
+    storage_specs.insert(ss);
+  }
+
+  void add_type_qualifier(TypeQualifier tq) {
+    type_quals.insert(tq);
+  }
+
+  void add_func_specifier(FunctionSpecifier fs) {
+    func_specs.insert(fs);
+  }
+
+  string dump_ast(string prefix) {
+    return "Not Implemented";
+  }
+
+  void scopify(symboltable *s, int *new_location) {
+    cout << "Scopify not implemented for declspec" << endl;
+  }
+};
+
+struct Declarator : Node {
+  public:
+  int ptr_depth;
+  Identifier *ident;
+
+  Declarator(int _ptr_depth, Identifier *_ident):
+    ptr_depth{_ptr_depth}, ident{_ident} {}
+
+  Declarator(Identifier *_ident):
+    ptr_depth{0}, ident{_ident} {}
+};
+
+struct PureDeclaration : Node {
+
+  public:
+  DeclarationSpecifiers* decl_specs;
+  int ptr_depth;
+  Identifier *ident;
+
+  PureDeclaration(DeclarationSpecifiers* _decl_specs, int _ptr_depth, Identifier *_ident) : 
+    decl_specs{_decl_specs}, ptr_depth{_ptr_depth}, ident{_ident} {}
+};
+
+struct FunctionParameterList : Node, std::vector<PureDeclaration*> {
+
+  bool has_varargs;
+
+  FunctionParameterList(bool _has_varargs) : has_varargs{_has_varargs} {}
+};
+
+struct InitDeclarator : Node {
+  public:
+  int ptr_depth;
+  Identifier *ident;
+  Expression *init_expr;
+
+  InitDeclarator(int _ptr_depth, Identifier *_ident, Expression *_init_expr):
+    ptr_depth{_ptr_depth}, ident{_ident}, init_expr{_init_expr} {}
+
+  InitDeclarator(Identifier *_ident, Expression *_init_expr):
+    ptr_depth{0}, ident{_ident}, init_expr{_init_expr} {}
+};
+
 struct Declaration : Node {
   Type *typ;
   Identifier *Ident;
+
+  DeclarationSpecifiers* decl_specs;
+  std::vector<InitDeclarator>* decl_list;
 
   Declaration(Type *_typ, Identifier *_name) : typ(_typ), Ident(_name) {}
 
@@ -462,6 +642,24 @@ struct BlockStatement : Statement, vector<Statement *> {
   }
 };
 
+struct LabeledStatement : Statement {
+
+  string label;
+  Statement* stmt;
+
+  LabeledStatement(char* _label, Statement* _stmt): label(_label), stmt{_stmt} {} 
+};
+
+struct CaseStatement : Statement {
+
+  Expression* const_expr;
+  Statement* stmt;
+
+  CaseStatement(Expression* _const_expr, Statement* _stmt): const_expr{_const_expr}, stmt{_stmt} {} 
+};
+
+
+
 struct Parameter : Node {
   Type *typ;
   string name;
@@ -487,16 +685,15 @@ struct Parameter : Node {
 };
 
 struct Function : Node {
-  Type *return_type;
-  string name;
-  vector<Parameter *> *parameters;
-  BlockStatement *statement_block;
 
-  Function(Type *_return_type, string _name, vector<Parameter *> *_parameters,
-           BlockStatement *_stmts)
-      : return_type(_return_type), name(_name), parameters(_parameters),
-        statement_block(_stmts) {}
+  PureDeclaration* func_decl;
+  FunctionParameterList* params;
+  BlockStatement* stmts;
 
+  Function(PureDeclaration* _func_decl, FunctionParameterList* _params, BlockStatement* _stmts):
+    func_decl{_func_decl}, params{_params}, stmts{_stmts} {}
+
+  /*
   string dump_ast(string prefix) {
     string result = "function: " + name + "\n" + prefix +
                     "`- return_type: " + return_type->dump_ast(prefix + "|  ");
@@ -516,8 +713,10 @@ struct Function : Node {
     result += "\n" + prefix + "`- " + statement_block->dump_ast(prefix + "   ");
     return result;
   }
+  */
 
   void scopify(symboltable *s, int *new_location) {
+    std::string name = func_decl->ident->name;
     if (s->check_scope(name)) {
       cout << "PANIC REDECLARATION\n"; // TODO no error if this is the
                                        // definition
@@ -525,23 +724,25 @@ struct Function : Node {
       s->add_symbol(name, 0);
       *new_location = 0;
       s->enter_scope();
-      if (parameters) {
-        for (auto param : *parameters) {
+      if (params) {
+        for (auto param : *params) {
           param->scopify(s, new_location);
         }
       }
-      statement_block->scopify(s, new_location);
+      stmts->scopify(s, new_location);
       s->exit_scope();
     }
   }
 
   ~Function() {
-    delete return_type;
-    for (auto param : *parameters) {
-      delete param;
+    delete func_decl;
+    if (params) {
+      for (auto param : *params) {
+        delete param;
+      }
+      delete params;
     }
-    delete parameters;
-    delete statement_block;
+    delete stmts;
   }
 };
 

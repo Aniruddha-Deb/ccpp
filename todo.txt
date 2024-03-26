@@ -2,7 +2,10 @@
 - [X] If Statement 
 - [X] While Statement
 - [X] Function calling
-- [ ] Deletion and object cleanup
+- [X] Deletion and object cleanup
 - [ ] Move dump_ast impl to ast.cpp?
 - [ ] Literal parsing?
 - [ ] Types?
+
+- [ ] Const expr checking
+- [ ] Codegen
