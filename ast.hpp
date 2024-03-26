@@ -577,9 +577,9 @@ struct Declaration : Node {
   Identifier *Ident;
 
   DeclarationSpecifiers* decl_specs;
-  std::vector<InitDeclarator>* decl_list;
+  std::vector<InitDeclarator*>* decl_list;
 
-  Declaration(Type *_typ, Identifier *_name) : typ(_typ), Ident(_name) {}
+  Declaration(DeclarationSpecifiers* _decl_specs , vector<InitDeclarator*> *_decl_list) : decl_specs(_decl_specs), decl_list(_decl_list) {}
 
   string dump_ast(string prefix) {
     return Ident->dump_ast(prefix) + "\n" + prefix + "`- type: " + typ->dump_ast(prefix + "   ");
@@ -752,10 +752,8 @@ struct TranslationUnit : Node {
   vector<DeclarationStatement *> *decls;
   vector<bool> *is_decl;
 
-  TranslationUnit(vector<Function *> *_functions,
-                  vector<DeclarationStatement *> *_decls,
-                  vector<bool> *_is_decl)
-      : functions(_functions), decls(_decls), is_decl(_is_decl) {}
+  TranslationUnit()
+      : functions(new vector<Function*>), decls(new vector<DeclarationStatement*>), is_decl(new vector<bool>) {}
 
   void add_function(Function *func) {
     functions->push_back(func);

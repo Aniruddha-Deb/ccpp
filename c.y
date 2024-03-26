@@ -28,11 +28,21 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
     ast::BinaryExpression* ast_binary_expression;
     ast::Literal*          ast_literal;
     ast::Operator          ast_operator;
-
-    vector<ast::Parameter*>* ast_parameter_list;
+    ast::StorageSpecifier  ast_storage_specifier;
+    ast::TypeSpecifier     ast_type_specifier;
+    ast::TypeQualifier     ast_type_qualifier;
+    ast::FunctionSpecifier ast_function_specifier;
+    ast::InitDeclarator*   ast_init_declarator;
+    ast::PureDeclaration*  ast_pure_declaration;         
+    ast::DeclarationSpecifiers*    ast_declaration_specifiers;
+    ast::FunctionParameterList*    ast_function_parameter_list;   
+    ast::ExpressionStatement*      ast_expression_statement;  
+    vector<ast::InitDeclarator*>*  ast_init_declarator_list; 
+    vector<ast::PureDeclaration*>* ast_parameter_list;
     vector<ast::Expression*>* ast_expression_list;
 
-    char *str;
+    char* str;
+    int ast_pointer_list;
 }
 
 %token	FUNC_NAME SIZEOF
@@ -62,14 +72,19 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 %nterm <ast_type>  type_name
 %nterm <ast_block_statement> statement_list
 %nterm <ast_block_statement> compound_statement
+%nterm <ast_block_statement> block_item_list
 %nterm <ast_statement> statement
 %nterm <ast_statement> selection_statement
 %nterm <ast_statement> iteration_statement
 %nterm <ast_statement> jump_statement
+%nterm <ast_statement> block_item
+%nterm <ast_statement> labeled_statement
+
 %nterm <ast_declaration> declaration
 
 %nterm <ast_expression> primary_expression
 %nterm <ast_expression> constant
+%nterm <ast_expression> constant_expression
 %nterm <ast_expression> string
 %nterm <ast_expression> postfix_expression
 %nterm <ast_expression> unary_expression
@@ -92,6 +107,20 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 
 %nterm <ast_operator> unary_operator
 %nterm <ast_operator> assignment_operator
+%nterm <ast_init_declarator> init_declarator
+%nterm <ast_pointer_list> pointer_list
+
+%nterm <ast_type_specifier> type_specifier
+%nterm <ast_storage_specifier> storage_class_specifier
+%nterm <ast_type_qualifier> type_qualifier
+%nterm <ast_function_specifier> function_specifier
+%nterm <ast_declaration_specifiers> declaration_specifiers
+%nterm <ast_init_declarator_list> init_declarator_list
+%nterm <ast_function_parameter_list> function_parameter_list
+%nterm <ast_pure_declaration> pure_declaration
+%nterm <ast_expression_statement> expression_statement
+
+
 
 %start translation_unit
 %%
@@ -248,32 +277,34 @@ constant_expression
 /* -Declarations------------------------------------------------------------- */
 
 declaration
-	: declaration_specifiers ';' { $$ = new Declaration($1); }
-	| declaration_specifiers init_declarator_list ';' { $$ = new Declaration($1, $2); }
-	| static_assert_declaration
+	: declaration_specifiers ';' { $$ = new ast::Declaration($1, nullptr); }      /* idk just put nullptr here TODO */
+	| declaration_specifiers init_declarator_list ';' { $$ = new ast::Declaration($1, $2); }
 	;
+
+
+	/* | static_assert_declaration */
 
 declaration_specifiers
 	: storage_class_specifier declaration_specifiers { $2->add_storage_specifier($1); $$ = $2; }
-	| storage_class_specifier { $$ = new DeclarationSpecifier(); $$->set_type($1); }
+	| storage_class_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_storage_specifier($1); }
 	| type_specifier declaration_specifiers { $2->set_type($1); $$ = $2; }
-	| type_specifier { $$ = new DeclarationSpecifier(); $$->set_type($1); }
+	| type_specifier { $$ = new ast::DeclarationSpecifiers(); $$->set_type($1); }
 	| type_qualifier declaration_specifiers { $2->add_type_qualifier($1); $$ = $2; }
-	| type_qualifier { $$ = new DeclarationSpecifier(); $$->add_type_qualifier($1); }
-	| function_specifier declaration_specifiers { $2->add_function_specifier($1); $$ = $2; }
-	| function_specifier { $$ = new DeclarationSpecifier(); $$->add_function_specifier($1); }
+	| type_qualifier { $$ = new ast::DeclarationSpecifiers(); $$->add_type_qualifier($1); }
+	| function_specifier declaration_specifiers { $2->add_func_specifier($1); $$ = $2; }
+	| function_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_func_specifier($1); }
 	;
 
 init_declarator_list
-	: init_declarator { $$ = new std::vector<InitDeclarator>(); $$->push_back($1); }
-	| init_declarator_list ',' init_declarator { $1->add_declarator($2); $$ = $1; }
+	: init_declarator { $$ = new std::vector<ast::InitDeclarator*>(); $$->push_back($1); }
+	| init_declarator_list ',' init_declarator { $1->push_back($3); $$ = $1; }
 	;
 
 init_declarator
-	: pointer_list IDENTIFIER '=' assignment_expression { $$ = new InitDeclarator($1, $2, $4); }
-	| IDENTIFIER '=' assignment_expression { $$ = new InitDeclarator($1, $3); }
-	| pointer_list IDENTIFIER { $$ = new InitDeclarator($1, $2, nullptr); }
-	| IDENTIFIER { $$ = new InitDeclarator($1, nullptr); }
+	: pointer_list IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), $4); }
+	| IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator(new ast::Identifier($1), $3); }
+	| pointer_list IDENTIFIER { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), nullptr); }
+	| IDENTIFIER { $$ = new ast::InitDeclarator(new ast::Identifier($1), nullptr); }
 	;
 
 pointer_list
@@ -318,18 +349,18 @@ function_specifier
 	;
 
 function_parameter_list
-	: parameter_list ',' ELLIPSIS { $$ = new FunctionParameterList(true); $$->copy($1->begin(), $1->end()); delete $1; } 
-	| parameter_list { $$ = new FunctionParameterList(false); $$->copy($1->begin(), $1->end()); delete $1; }
+	: parameter_list ',' ELLIPSIS { $$ = new ast::FunctionParameterList(true); copy($1->begin(), $1->end(), $$->begin()); delete $1; } 
+	| parameter_list { $$ = new ast::FunctionParameterList(false); copy($1->begin(), $1->end(), $$->begin()); delete $1; }             // vector copy TODO
 	;
 
 parameter_list
-	: pure_declaration { $$ = new std::vector<PureDeclaration*>(); $$->push_back($1); } 
+	: pure_declaration { $$ = new std::vector<ast::PureDeclaration*>(); $$->push_back($1); } 
 	| parameter_list ',' pure_declaration { $1->push_back($3); $$ = $1; } 
 	;
 
 pure_declaration
-	: declaration_specifiers pointer_list IDENTIFIER { $$ = new PureDeclaration($1, $2, new Identifier($3)); } 
-	| declaration_specifiers IDENTIFIER { $$ = new PureDeclaration($1, 0, new Identifier($3)); }
+	: declaration_specifiers pointer_list IDENTIFIER { $$ = new ast::PureDeclaration($1, $2, new ast::Identifier($3)); } 
+	| declaration_specifiers IDENTIFIER { $$ = new ast::PureDeclaration($1, 0, new ast::Identifier($2)); }
   ;
 
 /* -Statements--------------------------------------------------------------- */
@@ -344,8 +375,8 @@ statement
 	;
 
 labeled_statement
-	: IDENTIFIER ':' statement { $$ = new LabeledStatement($1, $3); }
-	| CASE constant_expression ':' statement { $$ = new CaseStatement($2, $4); }
+	: IDENTIFIER ':' statement { $$ = new ast::LabeledStatement(new ast::Identifier($1), $3); }
+	| CASE constant_expression ':' statement { $$ = new ast::CaseStatement($2, $4); }
 	| DEFAULT ':' statement { $$ = $3; }
 	;
 
@@ -383,7 +414,7 @@ jump_statement
 	: GOTO IDENTIFIER ';' { $$ = new ast::GotoStatement($2); }
 	| CONTINUE ';' { $$ = new ast::ContinueStatement(); }
 	| BREAK ';' { $$ = new ast::BreakStatement(); }
-	: RETURN ';' { $$ = new ast::ReturnStatement(nullptr); }
+	| RETURN ';' { $$ = new ast::ReturnStatement(nullptr); }
 	| RETURN expression ';' { $$ = new ast::ReturnStatement($2); }
 	;
 
@@ -391,21 +422,28 @@ jump_statement
 
 translation_unit
 	: function_definition { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; }
-	: declaration { $$ = new ast::TranslationUnit(); $$->add_declaration($1); *tu = *$$; }
+	| declaration { $$ = new ast::TranslationUnit(); $$->add_declaration(new ast::DeclarationStatement($1)); *tu = *$$; }
 	| translation_unit function_definition { $1->add_function($2); $$ = $1; *tu = *$$; }
-	| translation_unit declaration { $1->add_declaration($2); $$ = $1; *tu = *$$; }
+	| translation_unit declaration { $1->add_declaration(new ast::DeclarationStatement($2)); $$ = $1; *tu = *$$; }
 	;
+
+/* DeclarationStatement TODO */ 
+
 
 function_definition
   : pure_declaration '(' function_parameter_list ')' compound_statement { $$ = new ast::Function($1, $3, $5); }
-  | pure_declaration '(' ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); }
+  | pure_declaration '(' ')' compound_statement { $$ = new ast::Function($1, nullptr, $4); }
   | pure_declaration '(' VOID ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); }
   ;
 
+
+/*
 function_definition
     : type_name IDENTIFIER '(' parameter_list ')' compound_statement { $$ = new ast::Function($1, std::string($2), $4, $6); }
     | type_name IDENTIFIER '(' ')' compound_statement                { $$ = new ast::Function($1, std::string($2), nullptr, $5); }
     ;
+
+*/
 
 %%
 #include <stdio.h>

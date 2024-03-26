@@ -25,9 +25,7 @@ main(int argc, char **argv)
   char const *filename = argv[1];
   yyin = fopen(filename, "r");
   assert(yyin);
-  ast::TranslationUnit* tu = new ast::TranslationUnit(new vector<ast::Function*>,
-                                                      new vector<ast::DeclarationStatement*>,
-                                                      new vector<bool>);
+  ast::TranslationUnit* tu = new ast::TranslationUnit();
   int ret = yyparse(tu);
 
   std::cout << std::endl;
