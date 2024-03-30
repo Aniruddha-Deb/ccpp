@@ -7,14 +7,17 @@ ifneq ($(OS),Darwin)
 	BISON=bison
 endif
 
-cc: cc.cpp c.tab.cpp c.lex.cpp ast.hpp ast.cpp symtab.cpp symtab.hpp
-	g++ -std=c++17 c.tab.cpp c.lex.cpp ast.cpp cc.cpp symtab.cpp $(CCFLAGS) -o $@
+SRC = src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp
 
-c.tab.cpp c.tab.hpp: c.y
-	$(BISON) -t -o c.tab.cpp -d c.y
+cc: $(SRC)
+	g++ -std=c++17 $< $(CCFLAGS) -o $@
 
-c.lex.cpp: c.l c.tab.hpp
-	flex -o c.lex.cpp -l c.l
+src/c.tab.cpp: src/c.y
+	$(BISON) -t -o src/c.tab.cpp -d $<
 
-clean::
-	rm -f c.tab.cpp c.tab.hpp c.lex.cpp cc c.output
+src/c.lex.cpp: src/c.l src/c.tab.hpp
+	flex -o src/c.lex.cpp -l src/c.l
+
+clean:
+	rm -f bin/*
+	rm src/c.tab.* src/c.lex.*
