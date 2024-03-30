@@ -120,8 +120,6 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 %nterm <ast_pure_declaration> pure_declaration
 %nterm <ast_expression_statement> expression_statement
 
-
-
 %start translation_unit
 %%
 
@@ -282,8 +280,6 @@ declaration
 	;
 
 
-	/* | static_assert_declaration */
-
 declaration_specifiers
 	: storage_class_specifier declaration_specifiers { $2->add_storage_specifier($1); $$ = $2; }
 	| storage_class_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_storage_specifier($1); }
@@ -427,23 +423,12 @@ translation_unit
 	| translation_unit declaration { $1->add_declaration(new ast::DeclarationStatement($2)); $$ = $1; *tu = *$$; }
 	;
 
-/* DeclarationStatement TODO */ 
-
-
 function_definition
   : pure_declaration '(' function_parameter_list ')' compound_statement { $$ = new ast::Function($1, $3, $5); }
   | pure_declaration '(' ')' compound_statement { $$ = new ast::Function($1, nullptr, $4); }
   | pure_declaration '(' VOID ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); }
   ;
 
-
-/*
-function_definition
-    : type_name IDENTIFIER '(' parameter_list ')' compound_statement { $$ = new ast::Function($1, std::string($2), $4, $6); }
-    | type_name IDENTIFIER '(' ')' compound_statement                { $$ = new ast::Function($1, std::string($2), nullptr, $5); }
-    ;
-
-*/
 
 %%
 #include <stdio.h>
