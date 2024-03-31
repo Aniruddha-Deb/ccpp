@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "debug.hpp"
 
 namespace ast {
 
@@ -96,228 +97,309 @@ string fs2str(FunctionSpecifier fs) {
   }
 }
 
-Type::Type(string _name) : name(_name) {}
+Type::Type(string _name) : name(_name) {
+    cdebug << "Type constructor called with name: " << _name << endl;
+}
 
-Identifier::Identifier(string _name) : name(_name), location(-1) {}
+Identifier::Identifier(string _name) : name(_name), location(-1) {
+    cdebug << "Identifier constructor called with name: " << _name << endl;
+}
 
 TernaryExpression::TernaryExpression(Expression *_cond,
                                      Expression *_true_branch,
                                      Expression *_false_branch)
-    : cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {}
+    : cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {
+    cdebug << "TernaryExpression constructor called" << endl;
+}
 
 TernaryExpression::~TernaryExpression() {
-  delete cond;
-  delete true_branch;
-  delete false_branch;
+    cdebug << "TernaryExpression destructor called" << endl;
+    delete cond;
+    delete true_branch;
+    delete false_branch;
 }
 
 TypecastExpression::TypecastExpression(Type *_typ, Expression *_expr)
-    : typ(_typ), expr(_expr) {}
+    : typ(_typ), expr(_expr) {
+    cdebug << "TypecastExpression constructor called" << endl;
+}
 
 TypecastExpression::~TypecastExpression() {
-  delete typ;
-  delete expr;
+    cdebug << "TypecastExpression destructor called" << endl;
+    delete typ;
+    delete expr;
 }
 
 FunctionInvocationExpression::FunctionInvocationExpression(Expression *_fn)
-    : fn(_fn) {}
+    : fn(_fn) {
+    cdebug << "FunctionInvocationExpression constructor called" << endl;
+}
 
 FunctionInvocationExpression::FunctionInvocationExpression(
     Expression *_fn, vector<Expression *> *_params)
-    : fn(_fn), params(_params) {}
-
-FunctionInvocationExpression::~FunctionInvocationExpression() {
-  delete fn;
-  for (auto expr : *params) {
-    delete expr;
-  }
-  delete params;
+    : fn(_fn), params(_params) {
+    cdebug << "FunctionInvocationExpression constructor called with params" << endl;
 }
 
-TypeExpression::TypeExpression(Operator _op, Type *_typ) : op(_op), typ(_typ) {}
+FunctionInvocationExpression::~FunctionInvocationExpression() {
+    cdebug << "FunctionInvocationExpression destructor called" << endl;
+    delete fn;
+    for (auto expr : *params) {
+        delete expr;
+    }
+    delete params;
+}
 
-TypeExpression::~TypeExpression() { delete typ; }
+TypeExpression::TypeExpression(Operator _op, Type *_typ) : op(_op), typ(_typ) {
+    cdebug << "TypeExpression constructor called" << endl;
+}
+
+TypeExpression::~TypeExpression() {
+    cdebug << "TypeExpression destructor called" << endl;
+    delete typ;
+}
 
 BinaryExpression::BinaryExpression(Expression *_lhs, Operator _op,
                                    Expression *_rhs)
-    : lhs(_lhs), op(_op), rhs(_rhs) {}
+    : lhs(_lhs), op(_op), rhs(_rhs) {
+    cdebug << "BinaryExpression constructor called" << endl;
+}
 
 BinaryExpression::~BinaryExpression() {
-  delete lhs;
-  delete rhs;
+    cdebug << "BinaryExpression destructor called" << endl;
+    delete lhs;
+    delete rhs;
 }
 
 UnaryExpression::UnaryExpression(Operator _op, Expression *_expr)
-    : op(_op), expr(_expr) {}
+    : op(_op), expr(_expr) {
+    cdebug << "UnaryExpression constructor called" << endl;
+}
 
 Literal::Literal(string _value, LiteralType _ltype)
     : value(_value), ltype(_ltype) {
-  // TODO parse literal to int/float etc
+    cdebug << "Literal constructor called with value: " << _value << endl;
+    // TODO parse literal to int/float etc
 }
 
-ExpressionStatement::ExpressionStatement(Expression *_expr) : expr(_expr) {}
+ExpressionStatement::ExpressionStatement(Expression *_expr) : expr(_expr) {
+    cdebug << "ExpressionStatement constructor called" << endl;
+}
 
-ExpressionStatement::~ExpressionStatement() { delete expr; }
+ExpressionStatement::~ExpressionStatement() {
+    cdebug << "ExpressionStatement destructor called" << endl;
+    delete expr;
+}
 
 IfStatement::IfStatement(Expression *_cond, Statement *_true_branch,
                          Statement *_false_branch)
-    : cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {}
+    : cond(_cond), true_branch(_true_branch), false_branch(_false_branch) {
+    cdebug << "IfStatement constructor called" << endl;
+}
 
 IfStatement::~IfStatement() {
-  delete cond;
-  delete true_branch;
-  delete false_branch;
+    cdebug << "IfStatement destructor called" << endl;
+    delete cond;
+    delete true_branch;
+    delete false_branch;
 }
 
 SwitchStatement::~SwitchStatement() {
-  delete expr;
-  delete stmt;
+    cdebug << "SwitchStatement destructor called" << endl;
+    delete expr;
+    delete stmt;
 }
 
 WhileStatement::WhileStatement(Expression *_cond, Statement *_stmt)
-    : cond(_cond), stmt(_stmt) {}
+    : cond(_cond), stmt(_stmt) {
+    cdebug << "WhileStatement constructor called" << endl;
+}
 
 WhileStatement::~WhileStatement() {
-  delete cond;
-  delete stmt;
+    cdebug << "WhileStatement destructor called" << endl;
+    delete cond;
+    delete stmt;
 }
 
 DoWhileStatement::DoWhileStatement(Expression *_cond, Statement *_stmt)
-    : cond(_cond), stmt(_stmt) {}
-
-DoWhileStatement::~DoWhileStatement() {
-  delete cond;
-  delete stmt;
+    : cond(_cond), stmt(_stmt) {
+    cdebug << "DoWhileStatement constructor called" << endl;
 }
 
-ReturnStatement::ReturnStatement(Expression *_ret_expr) : ret_expr(_ret_expr) {}
+DoWhileStatement::~DoWhileStatement() {
+    cdebug << "DoWhileStatement destructor called" << endl;
+    delete cond;
+    delete stmt;
+}
 
-ReturnStatement::~ReturnStatement() { delete ret_expr; }
+ReturnStatement::ReturnStatement(Expression *_ret_expr) : ret_expr(_ret_expr) {
+    cdebug << "ReturnStatement constructor called" << endl;
+}
 
-GotoStatement::GotoStatement(char *_label) : label(_label) {}
+ReturnStatement::~ReturnStatement() {
+    cdebug << "ReturnStatement destructor called" << endl;
+    delete ret_expr;
+}
+
+GotoStatement::GotoStatement(char *_label) : label(_label) {
+    cdebug << "GotoStatement constructor called" << endl;
+}
 
 DeclarationSpecifiers::DeclarationSpecifiers()
-    : storage_specs(), type{TS_UNDEFINED}, type_quals(), func_specs() {}
+    : storage_specs(), type{TS_UNDEFINED}, type_quals(), func_specs() {
+    cdebug << "DeclarationSpecifiers constructor called" << endl;
+}
 
 void DeclarationSpecifiers::set_type(TypeSpecifier ts) {
-  if (type != TS_UNDEFINED) {
-    cout << "ERROR: redeclaration of type not allowed" << endl;
-  }
-  type = ts;
+    if (type != TS_UNDEFINED) {
+        cout << "ERROR: redeclaration of type not allowed" << endl;
+    }
+    type = ts;
 }
 
 void DeclarationSpecifiers::add_storage_specifier(StorageSpecifier ss) {
-  storage_specs.insert(ss);
+    storage_specs.insert(ss);
 }
 
 void DeclarationSpecifiers::add_type_qualifier(TypeQualifier tq) {
-  type_quals.insert(tq);
+    type_quals.insert(tq);
 }
 
 void DeclarationSpecifiers::add_func_specifier(FunctionSpecifier fs) {
-  func_specs.insert(fs);
+    func_specs.insert(fs);
 }
-
-/*
-Declarator::Declarator(int _ptr_depth, Identifier *_ident)
-    : ptr_depth{_ptr_depth}, ident{_ident} {}
-
-Declarator::Declarator(Identifier *_ident) : ptr_depth{0}, ident{_ident} {}
-*/
 
 PureDeclaration::PureDeclaration(DeclarationSpecifiers *_decl_specs,
                                  int _ptr_depth, Identifier *_ident)
-    : decl_specs{_decl_specs}, ptr_depth{_ptr_depth}, ident{_ident} {}
+    : decl_specs{_decl_specs}, ptr_depth{_ptr_depth}, ident{_ident} {
+    cdebug << "PureDeclaration constructor called" << endl;
+}
 
-FunctionParameterList::FunctionParameterList(bool _has_varargs)
-    : has_varargs{_has_varargs} {}
+FunctionParameterList::FunctionParameterList(std::vector<PureDeclaration*>* _params, bool _has_varargs)
+    : params{_params}, has_varargs{_has_varargs} {
+    cdebug << "FunctionParameterList constructor called" << endl;
+}
 
 InitDeclarator::InitDeclarator(int _ptr_depth, Identifier *_ident,
                                Expression *_init_expr)
-    : ptr_depth{_ptr_depth}, ident{_ident}, init_expr{_init_expr} {}
+    : ptr_depth{_ptr_depth}, ident{_ident}, init_expr{_init_expr} {
+    cdebug << "InitDeclarator constructor called" << endl;
+}
 
 InitDeclarator::InitDeclarator(Identifier *_ident, Expression *_init_expr)
-    : ptr_depth{0}, ident{_ident}, init_expr{_init_expr} {}
+    : ptr_depth{0}, ident{_ident}, init_expr{_init_expr} {
+    cdebug << "InitDeclarator constructor called" << endl;
+}
 
 Declaration::Declaration(DeclarationSpecifiers *_decl_specs,
                          vector<InitDeclarator *> *_decl_list)
-    : decl_specs(_decl_specs), decl_list(_decl_list) {}
-
-Declaration::~Declaration() { delete typ; }
-
-DeclarationStatement::DeclarationStatement(Declaration *_decl) : decl(_decl) {}
-
-DeclarationStatement::~DeclarationStatement() { delete decl; }
-
-/*
-void BlockStatement::scopify(symboltable *s, int *new_location) {
-  for (auto stmt : *this) {
-    stmt->scopify(s, new_location);
-  }
+    : decl_specs(_decl_specs), decl_list(_decl_list) {
+    cdebug << "Declaration constructor called" << endl;
 }
-*/
+
+Declaration::~Declaration() {
+    cdebug << "Declaration destructor called" << endl;
+    delete typ;
+}
+
+DeclarationStatement::DeclarationStatement(Declaration *_decl) : decl(_decl) {
+    cdebug << "DeclarationStatement constructor called" << endl;
+}
+
+DeclarationStatement::~DeclarationStatement() {
+    cdebug << "DeclarationStatement destructor called" << endl;
+    delete decl;
+}
 
 BlockStatement::~BlockStatement() {
-  for (auto stmt : *this) {
-    delete stmt;
-  }
+    cdebug << "BlockStatement destructor called" << endl;
+    for (auto stmt : *this) {
+        delete stmt;
+    }
 }
 
 LabeledStatement::LabeledStatement(Identifier *_label, Statement *_stmt)
-    : label{_label}, stmt{_stmt} {}
+    : label{_label}, stmt{_stmt} {
+    cdebug << "LabeledStatement constructor called" << endl;
+}
+
+LabeledStatement::~LabeledStatement() {
+    cdebug << "LabeledStatement destructor called" << endl;
+    delete label;
+    delete stmt;
+}
 
 CaseStatement::CaseStatement(Expression *_const_expr, Statement *_stmt)
-    : const_expr{_const_expr}, stmt{_stmt} {}
+    : const_expr{_const_expr}, stmt{_stmt} {
+    cdebug << "CaseStatement constructor called" << endl;
+}
 
-/*
-Parameter::Parameter(Type *_typ, string _name)
-    : typ(_typ), name(_name), location(-1) {}
+CaseStatement::~CaseStatement() {
+    cdebug << "CaseStatement destructor called" << endl;
+    delete const_expr;
+    delete stmt;
+}
 
-Parameter::~Parameter() { delete typ; }
-*/
+PureDeclaration::~PureDeclaration() {
+    cdebug << "PureDeclaration destructor called" << endl;
+    delete decl_specs;
+    delete ident;
+}
+
+SwitchStatement::SwitchStatement(Expression* _expr, Statement* _stmt)
+    : expr{_expr}, stmt{_stmt} {
+    cdebug << "SwitchStatement constructor called" << endl;
+}
+
+FunctionParameterList::~FunctionParameterList() {
+    cdebug << "FunctionParameterList destructor called" << endl;
+    for (auto pd : *params) {
+        delete pd;
+    }
+}
 
 Function::Function(PureDeclaration *_func_decl, FunctionParameterList *_params,
                    BlockStatement *_stmts)
-    : func_decl{_func_decl}, params{_params}, stmts{_stmts} {}
+    : func_decl{_func_decl}, params{_params}, stmts{_stmts} {
+    cdebug << "Function constructor called" << endl;
+}
 
 Function::~Function() {
-  delete func_decl;
-  if (params) {
-    for (auto param : *params) {
-      delete param;
-    }
+    cdebug << "Function destructor called" << endl;
+    delete func_decl;
     delete params;
-  }
-  delete stmts;
+    delete stmts;
 }
 
 TranslationUnit::TranslationUnit()
     : functions(new vector<Function *>),
-      decls(new vector<DeclarationStatement *>), is_decl(new vector<bool>) {}
+      decls(new vector<DeclarationStatement *>), is_decl(new vector<bool>) {
+    cdebug << "TranslationUnit constructor called" << endl;
+}
 
 void TranslationUnit::add_function(Function *func) {
-  functions->push_back(func);
-  is_decl->push_back(false);
+    functions->push_back(func);
+    is_decl->push_back(false);
 }
 
 void TranslationUnit::add_declaration(DeclarationStatement *decl) {
-  decls->push_back(decl);
-  is_decl->push_back(true);
+    decls->push_back(decl);
+    is_decl->push_back(true);
 }
 
 TranslationUnit::~TranslationUnit() {
-  delete is_decl;
-  for (auto decl : *decls) {
-    delete decl;
-  }
+    cdebug << "TranslationUnit destructor called" << endl;
+    delete is_decl;
+    for (auto decl : *decls) {
+        delete decl;
+    }
 
-  delete decls;
+    delete decls;
 
-  for (auto func : *functions) {
-    delete func;
-  }
+    for (auto func : *functions) {
+        delete func;
+    }
 
-  delete functions;
+    delete functions;
 }
-
 } // namespace ast

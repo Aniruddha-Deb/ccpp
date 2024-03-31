@@ -1,16 +1,22 @@
 # -lfl doesn't work on MacOS! https://stackoverflow.com/questions/21298097/library-not-found-for-lfl
-CCFLAGS=-lm -ll
+LDFLAGS=-lm -ll
 BISON=/opt/homebrew/opt/bison/bin/bison
 OS := $(shell uname)
 ifneq ($(OS),Darwin)
-	CCFLAGS += -lfl
+	LDFLAGS += -lfl
 	BISON=bison
 endif
 
-SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp # src/scopify.cpp
+DEBUG=-DDEBUG
 
-cc: src/c.tab.cpp src/c.lex.cpp
-	g++ -std=c++17 $(SRC) $(CCFLAGS) -o $@
+SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp # src/scopify.cpp
+OBJ=$(patsubst src/%.cpp, bin/%.o, $(SRC))
+
+cc: src/c.tab.cpp src/c.lex.cpp $(OBJ)
+	g++ -std=c++17 $(OBJ) $(LDFLAGS) $(DEBUG) -o $@
+
+bin/%.o: src/%.cpp
+	g++ -std=c++17 -c $< $(DEBUG) -o $@
 
 src/c.tab.cpp: src/c.y
 	$(BISON) -t -o src/c.tab.cpp -d $<

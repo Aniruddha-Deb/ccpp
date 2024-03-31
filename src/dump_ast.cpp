@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "debug.hpp"
 
 #include <sstream>
 
@@ -9,6 +10,7 @@ namespace ast {
 ////////////////////////////////////////////////////////////////////////////////
 
 string starify(int ptr_depth, string name) {
+  cdebug << "starify: " << ptr_depth << ", " << name << std::endl;
   stringstream s;
   for (int i=0; i<ptr_depth; i++) {
     s << "*";
@@ -19,9 +21,10 @@ string starify(int ptr_depth, string name) {
 
 template<typename T>
 string listify(std::vector<T*>& nodes, string prefix) {
+  cdebug << "listify: " << prefix << " with " << nodes.size() << " nodes " << std::endl;
   stringstream s;
   s << "\n" << prefix;
-  for (int i=0; i<nodes.size()-1; i++) {
+  for (int i=0; i<int(nodes.size())-1; i++) {
     s << "`- " << nodes[i]->dump_ast(prefix+"|  ") << "\n" << prefix;
   }
   if (nodes.size() > 0) {
@@ -34,13 +37,18 @@ string listify(std::vector<T*>& nodes, string prefix) {
 // Expressions
 ////////////////////////////////////////////////////////////////////////////////
 
-string Type::dump_ast(string prefix) { return name; }
+string Type::dump_ast(string prefix) {
+  cdebug << "Type::dump_ast: " << endl;
+  return name;
+}
 
 string Identifier::dump_ast(string prefix) {
+  cdebug << "Identifier::dump_ast: " << endl;
   return name + "[" + to_string(location) + "]";
 }
 
 string TernaryExpression::dump_ast(string prefix) {
+  cdebug << "TernaryExpression::dump_ast: " << endl;
   return "ternary_op\n" + prefix +
          "`- cond: " + cond->dump_ast(prefix + "|  ") + "\n" + prefix +
          "`- true_branch: " + true_branch->dump_ast(prefix + "|  ") + "\n" + prefix +
@@ -48,11 +56,13 @@ string TernaryExpression::dump_ast(string prefix) {
 }
 
 string TypecastExpression::dump_ast(string prefix) {
+  cdebug << "TypecastExpression::dump_ast: " << endl;
   return "typecast\n" + prefix + "`- type: " + typ->dump_ast(prefix + "|  ") +
          "\n" + prefix + "`- expr: " + expr->dump_ast(prefix + "   ");
 }
 
 string FunctionInvocationExpression::dump_ast(string prefix) {
+  cdebug << "FunctionInvocationExpression::dump_ast: " << endl;
   string result =
       "fn_call\n" + prefix + "`- fn: " + fn->dump_ast(prefix + "|  ");
   if (params) {
@@ -72,55 +82,60 @@ string FunctionInvocationExpression::dump_ast(string prefix) {
 }
 
 string TypeExpression::dump_ast(string prefix) {
+  cdebug << "TypeExpression::dump_ast: " << endl;
   return op2str(op) + "\n" + prefix +
          "`- type: " + typ->dump_ast(prefix + "   ");
 }
 
 string BinaryExpression::dump_ast(string prefix) {
+  cdebug << "BinaryExpression::dump_ast: " << endl;
   return op2str(op) + "\n" + prefix +
          "`- lhs: " + lhs->dump_ast(prefix + "|  ") + "\n" + prefix +
          "`- rhs: " + rhs->dump_ast(prefix + "   ");
 }
 
 string UnaryExpression::dump_ast(string prefix) {
+  cdebug << "UnaryExpression::dump_ast: " << endl;
   return op2str(op) + "\n" + prefix +
          "`- expr: " + expr->dump_ast(prefix + "   ");
 }
 
-string Literal::dump_ast(string prefix) { return "literal (" + value + ")"; }
+string Literal::dump_ast(string prefix) {
+  cdebug << "Literal::dump_ast: " << endl;
+  return "literal (" + value + ")";
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Declarations
 ////////////////////////////////////////////////////////////////////////////////
 
 string DeclarationSpecifiers::dump_ast(string prefix) {
+  cdebug << "DeclarationSpecifiers::dump_ast: " << endl;
   stringstream s;
-  s << ts2str(type) << "\n" << prefix;
+  s << ts2str(type);
   if (!storage_specs.empty()) {
-    s << "`- ss: ";
+    s << "\n" << prefix << "`- ss: ";
     for (auto ss : storage_specs) {
       s << ss2str(ss) << " ";
     }
-    s << "\n" << prefix;
   }
   if (!type_quals.empty()) {
-    s << "`- tq: ";
+    s << "\n" << prefix << "`- tq: ";
     for (auto tq : type_quals) {
       s << tq2str(tq) << " ";
     }
-    s << "\n" << prefix;
   }
   if (!func_specs.empty()) {
-    s << "`- fs: ";
+    s << "\n" << prefix << "`- fs: ";
     for (auto fs : func_specs) {
       s << fs2str(fs) << " ";
     }
-    s << "\n" << prefix;
   }
   return s.str();
 }
 
 string PureDeclaration::dump_ast(string prefix) {
+  cdebug << "PureDeclaration::dump_ast: " << endl;
   stringstream s;
   s << starify(ptr_depth, ident->name) << "\n" << prefix
     << "`- declspec: " << decl_specs->dump_ast(prefix + "   ");
@@ -128,8 +143,9 @@ string PureDeclaration::dump_ast(string prefix) {
 }
 
 string FunctionParameterList::dump_ast(string prefix) {
+  cdebug << "FunctionParameterList::dump_ast: " << endl;
   stringstream s;
-  s << listify<PureDeclaration>(*this, prefix);
+  s << listify<PureDeclaration>(*params, prefix);
   if (has_varargs) {
     s << "\n" << prefix << "`- VA_ARGS";
   }
@@ -137,6 +153,7 @@ string FunctionParameterList::dump_ast(string prefix) {
 }
 
 string InitDeclarator::dump_ast(string prefix) {
+  cdebug << "InitDeclarator::dump_ast: " << endl;
   stringstream s;
   s << starify(ptr_depth, ident->name);
   if (init_expr) {
@@ -146,6 +163,7 @@ string InitDeclarator::dump_ast(string prefix) {
 }
 
 string Declaration::dump_ast(string prefix) {
+  cdebug << "Declaration::dump_ast: " << endl;
   stringstream s;
   s << "\n" << prefix
     << "`- declspec: " << decl_specs->dump_ast(prefix + "|  ") << "\n" << prefix 
@@ -158,14 +176,17 @@ string Declaration::dump_ast(string prefix) {
 ////////////////////////////////////////////////////////////////////////////////
 
 string DeclarationStatement::dump_ast(string prefix) {
+  cdebug << "DeclarationStatement::dump_ast: " << endl;
   return "decl: " + decl->dump_ast(prefix);
 }
 
 string ExpressionStatement::dump_ast(string prefix) {
+  cdebug << "ExpressionStatement::dump_ast: " << endl;
   return "expr: " + expr->dump_ast(prefix);
 }
 
 string IfStatement::dump_ast(string prefix) {
+  cdebug << "IfStatement::dump_ast: " << endl;
   std::stringstream ss;
   ss << "if\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n";
 
@@ -181,47 +202,61 @@ string IfStatement::dump_ast(string prefix) {
 }
 
 string SwitchStatement::dump_ast(string prefix) {
+  cdebug << "SwitchStatement::dump_ast: " << endl;
   return "dump_ast not implemented for switch";
 }
 
 string CaseStatement::dump_ast(string prefix) {
+  cdebug << "CaseStatement::dump_ast: " << endl;
   return "dump_ast not implemented for case";
 }
 
 string WhileStatement::dump_ast(string prefix) {
-    stringstream ss;
-    ss << "while\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n"
-       << prefix << "`- stmt: " << stmt->dump_ast(prefix + " ");
-    return ss.str();
+  cdebug << "WhileStatement::dump_ast: " << endl;
+  stringstream ss;
+  ss << "while\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n"
+     << prefix << "`- stmt: " << stmt->dump_ast(prefix + " ");
+  return ss.str();
 }
 
 string DoWhileStatement::dump_ast(string prefix) {
-    stringstream ss;
-    ss << "do-while\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n"
-       << prefix << "`- stmt: " << stmt->dump_ast(prefix + " ");
-    return ss.str();
+  cdebug << "DoWhileStatement::dump_ast: " << endl;
+  stringstream ss;
+  ss << "do-while\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n"
+     << prefix << "`- stmt: " << stmt->dump_ast(prefix + " ");
+  return ss.str();
 }
 
 string ReturnStatement::dump_ast(string prefix) {
+  cdebug << "ReturnStatement::dump_ast: " << endl;
   if (ret_expr)
     return "return\n" + prefix +
            "`- expr: " + ret_expr->dump_ast(prefix + "   ");
   return "return";
 }
 
+string LabeledStatement::dump_ast(string prefix) {
+  cdebug << "LabeledStatement::dump_ast: " << endl;
+  return label->name + "\n" + prefix + stmt->dump_ast(prefix + "   ");
+}
+
 string BreakStatement::dump_ast(string prefix) {
+  cdebug << "BreakStatement::dump_ast: " << endl;
   return "break";
 }
 
 string ContinueStatement::dump_ast(string prefix) {
+  cdebug << "ContinueStatement::dump_ast: " << endl;
   return "continue";
 }
 
 string GotoStatement::dump_ast(string prefix) {
+  cdebug << "GotoStatement::dump_ast: " << endl;
   return "goto " + label;
 }
 
 string BlockStatement::dump_ast(string prefix) {
+  cdebug << "BlockStatement::dump_ast: " << endl;
   return listify<Statement>(*this, prefix);
 }
 
@@ -230,14 +265,18 @@ string BlockStatement::dump_ast(string prefix) {
 ////////////////////////////////////////////////////////////////////////////////
 
 string Function::dump_ast(string prefix) {
+  cdebug << "Function::dump_ast: " << endl;
   stringstream s;
-  s << func_decl->dump_ast(prefix) << "\n" << prefix 
-    << "`- params: " << params->dump_ast(prefix+"|  ") << "\n" << prefix 
-    << "`- block: " << stmts->dump_ast(prefix+"   ");
+  s << func_decl->dump_ast(prefix) << "\n" << prefix;
+  if (params) {
+    s << "`- params: " << params->dump_ast(prefix+"|  ") << "\n" << prefix;
+  }
+  s << "`- block: " << stmts->dump_ast(prefix+"   ");
   return s.str();
 }
 
 string TranslationUnit::dump_ast(string prefix) {
+  cdebug << "TranslationUnit::dump_ast: " << endl;
   if (is_decl->size() == 0) {
     return "translation_unit (empty)";
   }
@@ -246,22 +285,7 @@ string TranslationUnit::dump_ast(string prefix) {
   int func_itr = 0;
   int decl_itr = 0;
 
-  for (int i = 0; i < is_decl->size(); i++) {
-    if (!(*is_decl)[i]) {
-      if (func_itr < functions->size() - 1) {
-        result += prefix + "`- " +
-                  ((*functions)[func_itr])->dump_ast(prefix + "|  ") + "\n";
-      } else {
-        result += prefix + "`- " +
-                  ((*functions)[func_itr])->dump_ast(prefix + "   ") + "\n";
-      }
-      func_itr++;
-    } else {
-      result += prefix + "`- " +
-                ((*decls)[decl_itr])->dump_ast(prefix + "   ") + "\n";
-      decl_itr++;
-    }
-  }
-  return result;
+  return listify<Function>(*functions, "");
+  // TODO return decls as well
 }
-};
+} // namespace ast

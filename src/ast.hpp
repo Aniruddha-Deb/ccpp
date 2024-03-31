@@ -261,11 +261,12 @@ struct PureDeclaration : Node {
   ~PureDeclaration();
 };
 
-struct FunctionParameterList : Node, std::vector<PureDeclaration*> {
+struct FunctionParameterList : Node {
 
+  std::vector<PureDeclaration*>* params;
   bool has_varargs;
 
-  FunctionParameterList(bool _has_varargs);
+  FunctionParameterList(std::vector<PureDeclaration*>* _params, bool _has_varargs);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
   ~FunctionParameterList();

@@ -1,6 +1,7 @@
 %{
 #include <cstdio>
 #include <iostream>
+#include <algorithm>
 #include "ast.hpp"
 using namespace std;
 
@@ -347,8 +348,8 @@ function_specifier
 	;
 
 function_parameter_list
-	: parameter_list ',' ELLIPSIS { $$ = new ast::FunctionParameterList(true); copy($1->begin(), $1->end(), $$->begin()); delete $1; } 
-	| parameter_list { $$ = new ast::FunctionParameterList(false); copy($1->begin(), $1->end(), $$->begin()); delete $1; }             // vector copy TODO
+	: parameter_list ',' ELLIPSIS { $$ = new ast::FunctionParameterList($1, true); }
+	| parameter_list { $$ = new ast::FunctionParameterList($1, false); }
 	;
 
 parameter_list
