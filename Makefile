@@ -7,7 +7,7 @@ ifneq ($(OS),Darwin)
 	BISON=bison
 endif
 
-SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp src/scopify.cpp
+SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp # src/scopify.cpp
 
 cc: src/c.tab.cpp src/c.lex.cpp
 	g++ -std=c++17 $(SRC) $(CCFLAGS) -o $@

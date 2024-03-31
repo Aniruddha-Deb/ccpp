@@ -118,10 +118,14 @@ enum FunctionSpecifier {
 };
 
 string op2str(Operator op);
+string ss2str(StorageSpecifier ss);
+string ts2str(TypeSpecifier ts);
+string tq2str(TypeQualifier tq);
+string fs2str(FunctionSpecifier fs);
 
 struct Node {
   virtual string dump_ast(string prefix) = 0;
-  virtual void scopify(symboltable *s, int *new_location) = 0;
+  // virtual //void scopify(symboltable *s, int *new_location) = 0;
 };
 
 struct Type : Node {
@@ -129,8 +133,12 @@ struct Type : Node {
 
   Type(string _name);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// Expressions
+////////////////////////////////////////////////////////////////////////////////
 
 struct Expression : Node {
   virtual ~Expression() {}
@@ -142,7 +150,7 @@ struct Identifier : Expression {
 
   Identifier(string _name);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
 };
 
 struct TernaryExpression : Expression {
@@ -154,7 +162,7 @@ struct TernaryExpression : Expression {
                     Expression *_false_branch);
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~TernaryExpression();
 };
 
@@ -164,7 +172,7 @@ struct TypecastExpression : Expression {
 
   TypecastExpression(Type *_typ, Expression *_expr);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~TypecastExpression();
 };
 
@@ -177,7 +185,7 @@ struct FunctionInvocationExpression : Expression {
   FunctionInvocationExpression(Expression *_fn, vector<Expression *> *_params);
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~FunctionInvocationExpression();
 };
 
@@ -187,7 +195,7 @@ struct TypeExpression : Expression {
 
   TypeExpression(Operator _op, Type *_typ);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~TypeExpression();
 };
 
@@ -198,7 +206,7 @@ struct BinaryExpression : Expression {
 
   BinaryExpression(Expression *_lhs, Operator _op, Expression *_rhs);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~BinaryExpression();
 };
 
@@ -208,7 +216,7 @@ struct UnaryExpression : Expression {
 
   UnaryExpression(Operator _op, Expression *_expr);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
 };
 
 struct Literal : Expression {
@@ -216,94 +224,13 @@ struct Literal : Expression {
   LiteralType ltype;
 
   Literal(string _value, LiteralType _ltype);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   string dump_ast(string prefix);
 };
 
-struct Statement : Node {
-  virtual ~Statement() {}
-};
-
-struct ExpressionStatement : Statement {
-  Expression *expr;
-
-  ExpressionStatement(Expression *_expr);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-  ~ExpressionStatement();
-};
-
-struct IfStatement : Statement {
-
-  Expression *cond;
-  Statement *true_branch;
-  Statement *false_branch;
-
-  IfStatement(Expression *_cond, Statement *_true_branch,
-              Statement *_false_branch);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-  ~IfStatement();
-};
-
-struct SwitchStatement : Statement {
-
-  Expression *expr;
-  Statement *stmt;
-
-  SwitchStatement(Expression* _expr, Statement* _stmt);
-  ~SwitchStatement();
-};
-
-struct WhileStatement : Statement {
-
-  Expression *cond;
-  Statement *stmt;
-
-  WhileStatement(Expression *_cond, Statement *_stmt);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-  ~WhileStatement();
-};
-
-struct DoWhileStatement : Statement {
-
-  Expression *cond;
-  Statement *stmt;
-
-  DoWhileStatement(Expression *_cond, Statement *_stmt);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-  ~DoWhileStatement();
-};
-
-struct ReturnStatement : Statement {
-
-  Expression *ret_expr;
-
-  ReturnStatement(Expression *_ret_expr);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-  ~ReturnStatement();
-};
-
-struct GotoStatement : Statement {
-  string label;
-  GotoStatement(char* _label);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-};
-
-struct ContinueStatement : Statement {
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-};
-
-struct BreakStatement : Statement {
-
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-};
+////////////////////////////////////////////////////////////////////////////////
+// Declarations
+////////////////////////////////////////////////////////////////////////////////
 
 struct DeclarationSpecifiers : Node {
   std::set<StorageSpecifier> storage_specs;
@@ -319,18 +246,7 @@ struct DeclarationSpecifiers : Node {
   void add_func_specifier(FunctionSpecifier fs);
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-};
-
-struct Declarator : Node {
-  int ptr_depth;
-  Identifier *ident;
-
-  Declarator(int _ptr_depth, Identifier *_ident);
-  Declarator(Identifier *_ident);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-  ~Declarator();
+  //void scopify(symboltable *s, int *new_location);
 };
 
 struct PureDeclaration : Node {
@@ -341,7 +257,7 @@ struct PureDeclaration : Node {
   PureDeclaration(DeclarationSpecifiers* _decl_specs, int _ptr_depth, Identifier *_ident);
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~PureDeclaration();
 };
 
@@ -350,6 +266,9 @@ struct FunctionParameterList : Node, std::vector<PureDeclaration*> {
   bool has_varargs;
 
   FunctionParameterList(bool _has_varargs);
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+  ~FunctionParameterList();
 };
 
 struct InitDeclarator : Node {
@@ -361,7 +280,7 @@ struct InitDeclarator : Node {
   InitDeclarator(Identifier *_ident, Expression *_init_expr);
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~InitDeclarator();
 };
 
@@ -374,8 +293,16 @@ struct Declaration : Node {
 
   Declaration(DeclarationSpecifiers* _decl_specs , vector<InitDeclarator*> *_decl_list);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~Declaration();
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Statements
+////////////////////////////////////////////////////////////////////////////////
+
+struct Statement : Node {
+  virtual ~Statement() {}
 };
 
 struct DeclarationStatement : Statement {
@@ -383,25 +310,107 @@ struct DeclarationStatement : Statement {
 
   DeclarationStatement(Declaration *_decl);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~DeclarationStatement();
+};
+
+struct ExpressionStatement : Statement {
+  Expression *expr;
+
+  ExpressionStatement(Expression *_expr);
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+  ~ExpressionStatement();
+};
+
+struct IfStatement : Statement {
+
+  Expression *cond;
+  Statement *true_branch;
+  Statement *false_branch;
+
+  IfStatement(Expression *_cond, Statement *_true_branch,
+              Statement *_false_branch);
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+  ~IfStatement();
+};
+
+struct SwitchStatement : Statement {
+
+  Expression *expr;
+  Statement *stmt;
+
+  SwitchStatement(Expression* _expr, Statement* _stmt);
+  string dump_ast(string prefix);
+  ~SwitchStatement();
+};
+
+struct WhileStatement : Statement {
+
+  Expression *cond;
+  Statement *stmt;
+
+  WhileStatement(Expression *_cond, Statement *_stmt);
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+  ~WhileStatement();
+};
+
+struct DoWhileStatement : Statement {
+
+  Expression *cond;
+  Statement *stmt;
+
+  DoWhileStatement(Expression *_cond, Statement *_stmt);
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+  ~DoWhileStatement();
+};
+
+struct ReturnStatement : Statement {
+
+  Expression *ret_expr;
+
+  ReturnStatement(Expression *_ret_expr);
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+  ~ReturnStatement();
+};
+
+struct GotoStatement : Statement {
+  string label;
+  GotoStatement(char* _label);
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+};
+
+struct ContinueStatement : Statement {
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
+};
+
+struct BreakStatement : Statement {
+
+  string dump_ast(string prefix);
+  //void scopify(symboltable *s, int *new_location);
 };
 
 struct BlockStatement : Statement, vector<Statement *> {
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~BlockStatement();
 };
 
 struct LabeledStatement : Statement {
 
-  string label;
+  Identifier* label;
   Statement* stmt;
 
-  LabeledStatement(char* _label, Statement* _stmt);
+  LabeledStatement(Identifier* _label, Statement* _stmt);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~LabeledStatement();
 };
 
@@ -412,20 +421,13 @@ struct CaseStatement : Statement {
 
   CaseStatement(Expression* _const_expr, Statement* _stmt);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~CaseStatement();
 };
 
-struct Parameter : Node {
-  Type *typ;
-  string name;
-  int location;
-
-  Parameter(Type *_typ, string _name);
-  string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
-  ~Parameter();
-};
+////////////////////////////////////////////////////////////////////////////////
+// Functions
+////////////////////////////////////////////////////////////////////////////////
 
 struct Function : Node {
 
@@ -435,7 +437,7 @@ struct Function : Node {
 
   Function(PureDeclaration* _func_decl, FunctionParameterList* _params, BlockStatement* _stmts);
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~Function();
 };
 
@@ -451,7 +453,7 @@ struct TranslationUnit : Node {
   void add_declaration(DeclarationStatement *decl);
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  //void scopify(symboltable *s, int *new_location);
   ~TranslationUnit();
 };
 } // namespace ast

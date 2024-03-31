@@ -50,6 +50,52 @@ string op2str(Operator op) {
    }
 }
 
+string ss2str(StorageSpecifier ss) {
+  switch(ss) {
+    case SS_EXTERN: return "SS_EXTERN";
+    case SS_STATIC: return "SS_STATIC";
+    case SS_THREADLOCAL: return "SS_THREADLOCAL";
+    case SS_AUTO: return "SS_AUTO";
+    case SS_REGISTER: return "SS_REGISTER";
+  }
+}
+
+string ts2str(TypeSpecifier ts) {
+  switch(ts) {
+    case TS_VOID: return "TS_VOID";
+    case TS_CHAR: return "TS_CHAR";
+    case TS_SHORT: return "TS_SHORT";
+    case TS_INT: return "TS_INT";
+    case TS_LONG: return "TS_LONG";
+    case TS_FLOAT: return "TS_FLOAT";
+    case TS_DOUBLE: return "TS_DOUBLE";
+    case TS_SIGNED: return "TS_SIGNED";
+    case TS_UNSIGNED: return "TS_UNSIGNED";
+    case TS_BOOL: return "TS_BOOL";
+    case TS_COMPLEX: return "TS_COMPLEX";
+    case TS_IMAGINARY: return "TS_IMAGINARY";
+    case TS_STRUCT: return "TS_STRUCT";
+    case TS_UNION: return "TS_UNION";
+    case TS_UNDEFINED: return "TS_UNDEFINED";
+  }
+}
+
+string tq2str(TypeQualifier tq) {
+  switch(tq) {
+    case TQ_CONST: return "TQ_CONST";
+    case TQ_RESTRICT: return "TQ_RESTRICT";
+    case TQ_VOLATILE: return "TQ_VOLATILE";
+    case TQ_ATOMIC: return "TQ_ATOMIC";
+  }
+}
+
+string fs2str(FunctionSpecifier fs) {
+  switch(fs) {
+    case FS_INLINE: return "FS_INLINE";
+    case FS_NORETURN: return "FS_NORETURN";
+  }
+}
+
 Type::Type(string _name) : name(_name) {}
 
 Identifier::Identifier(string _name) : name(_name), location(-1) {}
@@ -172,10 +218,12 @@ void DeclarationSpecifiers::add_func_specifier(FunctionSpecifier fs) {
   func_specs.insert(fs);
 }
 
+/*
 Declarator::Declarator(int _ptr_depth, Identifier *_ident)
     : ptr_depth{_ptr_depth}, ident{_ident} {}
 
 Declarator::Declarator(Identifier *_ident) : ptr_depth{0}, ident{_ident} {}
+*/
 
 PureDeclaration::PureDeclaration(DeclarationSpecifiers *_decl_specs,
                                  int _ptr_depth, Identifier *_ident)
@@ -201,11 +249,13 @@ DeclarationStatement::DeclarationStatement(Declaration *_decl) : decl(_decl) {}
 
 DeclarationStatement::~DeclarationStatement() { delete decl; }
 
+/*
 void BlockStatement::scopify(symboltable *s, int *new_location) {
   for (auto stmt : *this) {
     stmt->scopify(s, new_location);
   }
 }
+*/
 
 BlockStatement::~BlockStatement() {
   for (auto stmt : *this) {
@@ -213,16 +263,18 @@ BlockStatement::~BlockStatement() {
   }
 }
 
-LabeledStatement::LabeledStatement(char *_label, Statement *_stmt)
-    : label(_label), stmt{_stmt} {}
+LabeledStatement::LabeledStatement(Identifier *_label, Statement *_stmt)
+    : label{_label}, stmt{_stmt} {}
 
 CaseStatement::CaseStatement(Expression *_const_expr, Statement *_stmt)
     : const_expr{_const_expr}, stmt{_stmt} {}
 
+/*
 Parameter::Parameter(Type *_typ, string _name)
     : typ(_typ), name(_name), location(-1) {}
 
 Parameter::~Parameter() { delete typ; }
+*/
 
 Function::Function(PureDeclaration *_func_decl, FunctionParameterList *_params,
                    BlockStatement *_stmts)

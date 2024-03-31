@@ -30,7 +30,7 @@ main(int argc, char **argv)
 
   std::cout << std::endl;
 
-  tu->scopify((symboltable*) 0, (int*) 0);
+  // tu->scopify((symboltable*) 0, (int*) 0);
   std::cout << tu->dump_ast("") << std::endl;
 
   /*

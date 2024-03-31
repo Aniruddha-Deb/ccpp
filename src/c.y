@@ -21,7 +21,7 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
     ast::Statement*        ast_statement;
     ast::BlockStatement*   ast_block_statement;
     ast::Function*         ast_function;
-    ast::Parameter*        ast_parameter;
+    // ast::Parameter*        ast_parameter;
     ast::Type*             ast_type;
     ast::Expression*       ast_expression;
     ast::Declaration*      ast_declaration;
@@ -37,6 +37,7 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
     ast::DeclarationSpecifiers*    ast_declaration_specifiers;
     ast::FunctionParameterList*    ast_function_parameter_list;   
     ast::ExpressionStatement*      ast_expression_statement;  
+    ast::DeclarationStatement*      ast_declaration_statement;  
     vector<ast::InitDeclarator*>*  ast_init_declarator_list; 
     vector<ast::PureDeclaration*>* ast_parameter_list;
     vector<ast::Expression*>* ast_expression_list;
@@ -68,7 +69,7 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 %nterm <ast_translation_unit> translation_unit
 %nterm <ast_function> function_definition
 %nterm <ast_parameter_list> parameter_list
-%nterm <ast_parameter>  parameter
+// %nterm <ast_parameter>  parameter
 %nterm <ast_type>  type_name
 %nterm <ast_block_statement> statement_list
 %nterm <ast_block_statement> compound_statement
@@ -119,6 +120,7 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 %nterm <ast_function_parameter_list> function_parameter_list
 %nterm <ast_pure_declaration> pure_declaration
 %nterm <ast_expression_statement> expression_statement
+%nterm <ast_declaration_statement> declaration_statement
 
 %start translation_unit
 %%
@@ -309,8 +311,8 @@ pointer_list
   ;
 
 storage_class_specifier
-	: TYPEDEF { $$ = ast::SS_TYPEDEF; }
-	| EXTERN { $$ = ast::SS_EXTERN; }
+	// : TYPEDEF { $$ = ast::SS_TYPEDEF; }
+	: EXTERN { $$ = ast::SS_EXTERN; }
 	| STATIC { $$ = ast::SS_STATIC; }
 	| THREAD_LOCAL { $$ = ast::SS_THREADLOCAL; }
 	| AUTO { $$ = ast::SS_AUTO; }
@@ -363,12 +365,16 @@ pure_declaration
 
 statement
 	: labeled_statement { $$ = $1; }
+  | declaration_statement { $$ = $1; }
 	| compound_statement { $$ = $1; }
 	| expression_statement { $$ = $1; }
 	| selection_statement { $$ = $1; }
 	| iteration_statement { $$ = $1; }
 	| jump_statement { $$ = $1; }
 	;
+
+declaration_statement
+  : declaration { $$ = new ast::DeclarationStatement($1); }
 
 labeled_statement
 	: IDENTIFIER ':' statement { $$ = new ast::LabeledStatement(new ast::Identifier($1), $3); }
@@ -382,13 +388,8 @@ compound_statement
   ;
 
 block_item_list 
-  : block_item                  { $$ = new ast::BlockStatement(); $$->push_back($1); }
-  | block_item_list block_item  { $1->push_back($2); $$ = $1; }
-
-block_item
-	: declaration { $$ = $1; }
-	| statement   { $$ = $1; }
-	;
+  : statement                  { $$ = new ast::BlockStatement(); $$->push_back($1); }
+  | block_item_list statement  { $1->push_back($2); $$ = $1; }
 
 expression_statement
 	: ';' { $$ = new ast::ExpressionStatement(nullptr); }
@@ -415,6 +416,8 @@ jump_statement
 	;
 
 /* -Translation Unit and Functions------------------------------------------- */
+
+/* TODO function declarations without definitions*/
 
 translation_unit
 	: function_definition { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; }
