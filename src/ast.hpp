@@ -1,13 +1,16 @@
 #pragma once
 
 #include "symtab.hpp"
+#include "llvm/IR/IRBuilder.h"
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 #include <set>
+#include <map>
 
 using namespace std;
+using namespace llvm;
 
 namespace ast {
 enum Operator {
@@ -455,6 +458,7 @@ struct TranslationUnit : Node {
 
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  void codegen();
   ~TranslationUnit();
 };
 } // namespace ast

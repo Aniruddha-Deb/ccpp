@@ -1,5 +1,7 @@
 void empty() { }
 
+int global_var  = 11;
+
 void simple_arith() {
   (10 - 10/3) << 3 | (23+8*12) & 1024;
 }
