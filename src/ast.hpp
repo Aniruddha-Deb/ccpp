@@ -10,7 +10,7 @@
 #include <map>
 
 using namespace std;
-using namespace llvm;
+// using namespace llvm;
 
 namespace ast {
 enum Operator {
@@ -145,6 +145,7 @@ struct Type : Node {
 
 struct Expression : Node {
   virtual ~Expression() {}
+  virtual llvm::Value* codegen();
 };
 
 struct Identifier : Expression {
@@ -153,7 +154,8 @@ struct Identifier : Expression {
 
   Identifier(string _name);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  llvm::Value* codegen() override;
+  // void scopify(symboltable *s, int *new_location);
 };
 
 struct TernaryExpression : Expression {
@@ -210,6 +212,7 @@ struct BinaryExpression : Expression {
   BinaryExpression(Expression *_lhs, Operator _op, Expression *_rhs);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  llvm::Value* codegen() override;
   ~BinaryExpression();
 };
 
@@ -228,6 +231,7 @@ struct Literal : Expression {
 
   Literal(string _value, LiteralType _ltype);
   //void scopify(symboltable *s, int *new_location);
+  llvm::Value* codegen() override;
   string dump_ast(string prefix);
 };
 
@@ -306,6 +310,7 @@ struct Declaration : Node {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct Statement : Node {
+  virtual llvm::Value* codegen();
   virtual ~Statement() {}
 };
 
@@ -315,6 +320,7 @@ struct DeclarationStatement : Statement {
   DeclarationStatement(Declaration *_decl);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  // llvm::Value* codegen();
   ~DeclarationStatement();
 };
 
@@ -324,6 +330,7 @@ struct ExpressionStatement : Statement {
   ExpressionStatement(Expression *_expr);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  llvm::Value* codegen() override;
   ~ExpressionStatement();
 };
 
@@ -337,6 +344,7 @@ struct IfStatement : Statement {
               Statement *_false_branch);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  // llvm::Value* codegen();
   ~IfStatement();
 };
 
@@ -347,6 +355,7 @@ struct SwitchStatement : Statement {
 
   SwitchStatement(Expression* _expr, Statement* _stmt);
   string dump_ast(string prefix);
+  // llvm::Value* codegen();
   ~SwitchStatement();
 };
 
@@ -358,6 +367,7 @@ struct WhileStatement : Statement {
   WhileStatement(Expression *_cond, Statement *_stmt);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  // llvm::Value* codegen();
   ~WhileStatement();
 };
 
@@ -369,6 +379,7 @@ struct DoWhileStatement : Statement {
   DoWhileStatement(Expression *_cond, Statement *_stmt);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  // llvm::Value* codegen();
   ~DoWhileStatement();
 };
 
@@ -379,6 +390,7 @@ struct ReturnStatement : Statement {
   ReturnStatement(Expression *_ret_expr);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  llvm::Value* codegen() override;
   ~ReturnStatement();
 };
 
@@ -386,24 +398,29 @@ struct GotoStatement : Statement {
   string label;
   GotoStatement(char* _label);
   string dump_ast(string prefix);
+  // llvm::Value* codegen();
   //void scopify(symboltable *s, int *new_location);
 };
 
 struct ContinueStatement : Statement {
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  // llvm::Value* codegen();
 };
 
 struct BreakStatement : Statement {
 
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  // llvm::Value* codegen();
 };
 
 struct BlockStatement : Statement, vector<Statement *> {
 
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+
+  llvm::Value* codegen() override;
   ~BlockStatement();
 };
 
@@ -414,6 +431,7 @@ struct LabeledStatement : Statement {
 
   LabeledStatement(Identifier* _label, Statement* _stmt);
   string dump_ast(string prefix);
+  // llvm::Value* codegen();
   //void scopify(symboltable *s, int *new_location);
   ~LabeledStatement();
 };
@@ -425,6 +443,7 @@ struct CaseStatement : Statement {
 
   CaseStatement(Expression* _const_expr, Statement* _stmt);
   string dump_ast(string prefix);
+  // llvm::Value* codegen();
   //void scopify(symboltable *s, int *new_location);
   ~CaseStatement();
 };
@@ -442,6 +461,7 @@ struct Function : Node {
   Function(PureDeclaration* _func_decl, FunctionParameterList* _params, BlockStatement* _stmts);
   string dump_ast(string prefix);
   //void scopify(symboltable *s, int *new_location);
+  llvm::Function* codegen(); 
   ~Function();
 };
 
