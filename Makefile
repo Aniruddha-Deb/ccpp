@@ -4,8 +4,8 @@ INCLUDE=-I/opt/homebrew/Cellar/llvm/17.0.6_1/include/
 BISON=/opt/homebrew/opt/bison/bin/bison
 OS := $(shell uname)
 ifneq ($(OS),Darwin)
-	LDFLAGS += -lfl
-	INCLUDE=
+	LDFLAGS += -lfl -L/usr/lib/llvm-14/lib -lLLVM-14
+	INCLUDE=-I/usr/lib/llvm-14/include
 	BISON=bison
 endif
 
