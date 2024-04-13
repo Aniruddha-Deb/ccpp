@@ -1,11 +1,10 @@
-- [X] Tree printing
-- [X] If Statement 
-- [X] While Statement
-- [X] Function calling
-- [X] Deletion and object cleanup
-- [ ] Move dump_ast impl to ast.cpp?
-- [ ] Literal parsing?
-- [ ] Types?
-
-- [ ] Const expr checking
-- [ ] Codegen
+- [ ] scopify refix, maintain symbol table
+- [ ] use symtab in codegen
+- [ ] llvm ir gen code cleanup
+- [ ] features left to implement
+  - [ ] complete expressions
+  - [ ] type checking for expressions
+  - [ ] declarations
+  - [ ] branches
+  - [ ] loops
+- [ ] parsing literals (int/float)

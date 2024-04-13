@@ -155,7 +155,7 @@ struct Identifier : Expression {
   Identifier(string _name);
   string dump_ast(string prefix);
   llvm::Value* codegen() override;
-  // void scopify(symboltable *s, int *new_location);
+  void scopify(symboltable *s, int *new_location);
 };
 
 struct TernaryExpression : Expression {
@@ -167,7 +167,7 @@ struct TernaryExpression : Expression {
                     Expression *_false_branch);
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify(symboltable *s, int *new_location);
   ~TernaryExpression();
 };
 

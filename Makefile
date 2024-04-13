@@ -1,10 +1,10 @@
 # -lfl doesn't work on MacOS! https://stackoverflow.com/questions/21298097/library-not-found-for-lfl
-LDFLAGS=-lm -ll
+LDFLAGS=-lm -ll -L/opt/homebrew/Cellar/llvm/17.0.6_1/lib/ -lLLVM-17
 INCLUDE=-I/opt/homebrew/Cellar/llvm/17.0.6_1/include/
 BISON=/opt/homebrew/opt/bison/bin/bison
 OS := $(shell uname)
 ifneq ($(OS),Darwin)
-	LDFLAGS += -lfl -L/usr/lib/llvm-14/lib -lLLVM-14
+	LDFLAGS = -lm -ll -lfl -L/usr/lib/llvm-14/lib -lLLVM-14
 	INCLUDE=-I/usr/lib/llvm-14/include
 	BISON=bison
 endif

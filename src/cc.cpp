@@ -45,5 +45,6 @@ main(int argc, char **argv)
   }
   */
   printf("retv = %d\n", ret);
+  tu->codegen();
   exit(0);
 }

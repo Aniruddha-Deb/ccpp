@@ -47,7 +47,7 @@ void TranslationUnit::codegen() {
   llvm_builder = std::make_unique<llvm::IRBuilder<>>(*llvm_ctx);
 
   for(auto func_ptr: *functions){
-    cout<<"READ FUNC DEF"<<endl;
+    // cout<<"READ FUNC DEF"<<endl;
     llvm::Function* func_ir = func_ptr->codegen();
     func_ir->print(errs());
     
@@ -64,29 +64,24 @@ Value* Statement::codegen(){
 }
 
 Value* ExpressionStatement::codegen(){
-  cout<<"exprstmt"<<endl;
   return expr->codegen();
 }
 
 Value* Literal::codegen() {
   int v;
-  cout<<ltype<<endl;
   switch(ltype) {
         case LT_INT_LIKE:
-            cout<<32<<endl;
             v = intLiteralToInt(value);
             return ConstantInt::get(*llvm_ctx, APInt(32, v));
             break;
             // break;
         case LT_INT64:
-            cout<<64<<endl;
             v = intLiteralToInt(value);
             return ConstantInt::get(*llvm_ctx, APInt(64, v));
         case LT_STRING:
             return ConstantDataArray::getString(*llvm_ctx, value, true);
             break;
         default:
-            cout<<-1<<endl;
             return nullptr;
   }
 }
@@ -119,7 +114,6 @@ Value* ReturnStatement::codegen(){
 
 
 Value* BlockStatement::codegen(){
-  cout<<"block"<<endl;
   Value* v;
   for (auto stmt = begin(); stmt != end(); ++stmt) {
         v = (*stmt)->codegen();
@@ -137,16 +131,13 @@ llvm::Function *Function::codegen() {
     num_args = params->params->size();
   }
 
-  cout<<"READ FUNC DEF"<<endl;
   std::vector<llvm::Type*> argtypes(num_args);
   for(int i = 0; i < num_args; i++){
     argtypes[i] = getType(TS_INT);  // TODO
   }
-  cout<<"READ FUNC DEF"<<endl;
   FunctionType *func_type = FunctionType::get(getType(TS_INT), argtypes, false);
   std::string func_name = func_decl->ident->name;
   llvm::Function *func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, func_name, llvm_mod.get());
-  cout<<"READ FUNC DEF"<<endl;
 
   int i=0;
   for (auto &Arg : func->args()){
@@ -161,14 +152,12 @@ llvm::Function *Function::codegen() {
   llvm_st.clear();
   for (auto &Arg : func->args())
     llvm_st[std::string(Arg.getName())] = &Arg;
-  cout<<"READ FUNC DEF"<<endl;
   if (Value *ret_val = stmts->codegen()) {
     // llvm_builder->CreateRet(ret_val);
     // creating return statement in retrunstatement->codegen() instead.
     verifyFunction(*func);
     return func;
   }
-  cout<<"RECKED"<<endl;
   func->eraseFromParent();
   return nullptr;
 }
