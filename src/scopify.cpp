@@ -24,7 +24,7 @@ SymbolType typespecs2st(std::set<TypeSpecifier> type_specs) {
 
 void Identifier::scopify() {
   cdebug << "Identifier::scopify: " << endl;
-  location = table->find_symbol(name).pos;
+  ident_info = table->find_symbol(name);
 }
 
 void TernaryExpression::scopify() {

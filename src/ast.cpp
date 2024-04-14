@@ -97,7 +97,7 @@ string fs2str(FunctionSpecifier fs) {
   }
 }
 
-Identifier::Identifier(string _name) : name(_name), location(-1) {
+Identifier::Identifier(string _name) : name(_name) {    // is this fine? Jai
     cdebug << "Identifier constructor called with name: " << _name << endl;
 }
 

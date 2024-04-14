@@ -10,6 +10,7 @@ using namespace std;
 enum SymbolType {
     FP32,
     FP64,
+    I1,
     I8,
     I16,
     I32,

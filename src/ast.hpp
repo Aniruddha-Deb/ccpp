@@ -135,18 +135,27 @@ struct Node {
 // Expressions
 ////////////////////////////////////////////////////////////////////////////////
 
+struct ExprTypeInfo{
+  SymbolType type;
+  int ptr_depth;
+  bool is_ref;
+};
+
 struct Expression : Node {
   virtual ~Expression() {}
-  virtual llvm::Value* codegen();
+  ExprTypeInfo type_info;
+  virtual llvm::Value* codegen();                      // codegen when rvalue
+  virtual llvm::Value* assign(Expression* R);         // codegen when lvalue
 };
 
 struct Identifier : Expression {
   string name;
-  int location;
+  SymbolInfo ident_info;
 
   Identifier(string _name);
   string dump_ast(string prefix);
   llvm::Value* codegen() override;
+  llvm::Value* assign(Expression* R) override;
   void scopify();
 };
 
@@ -172,6 +181,7 @@ struct FunctionInvocationExpression : Expression {
   FunctionInvocationExpression(Expression *_fn, vector<Expression *> *_params);
 
   string dump_ast(string prefix);
+  llvm::Value* codegen() override;
   void scopify();
   ~FunctionInvocationExpression();
 };
@@ -193,7 +203,7 @@ struct UnaryExpression : Expression {
   Expression *expr;
 
   UnaryExpression(Operator _op, Expression *_expr);
-  string dump_ast(string prefix);
+  string dump_ast(string prefix);                      // Add assign method
   void scopify();
 };
 
@@ -261,6 +271,7 @@ struct InitDeclarator : Node {
 
   string dump_ast(string prefix);
   void scopify();
+  // Value* codegen();
   ~InitDeclarator();
 };
 
@@ -271,6 +282,7 @@ struct Declaration : Node {
   Declaration(DeclarationSpecifiers* _decl_specs , vector<InitDeclarator*> *_decl_list);
   string dump_ast(string prefix);
   void scopify();
+  llvm::Value* codegen();
   ~Declaration();
 };
 
@@ -289,7 +301,7 @@ struct DeclarationStatement : Statement {
   DeclarationStatement(Declaration *_decl);
   string dump_ast(string prefix);
   void scopify();
-  // llvm::Value* codegen();
+  llvm::Value* codegen() override;
   ~DeclarationStatement();
 };
 
