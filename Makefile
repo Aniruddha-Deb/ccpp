@@ -11,7 +11,7 @@ endif
 
 DEBUG=-DDEBUG
 
-SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp src/codegen.cpp # src/scopify.cpp
+SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp src/codegen.cpp src/scopify.cpp
 OBJ=$(patsubst src/%.cpp, bin/%.o, $(SRC))
 
 cc: src/c.tab.cpp src/c.lex.cpp $(OBJ)

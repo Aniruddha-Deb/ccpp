@@ -97,10 +97,6 @@ string fs2str(FunctionSpecifier fs) {
   }
 }
 
-Type::Type(string _name) : name(_name) {
-    cdebug << "Type constructor called with name: " << _name << endl;
-}
-
 Identifier::Identifier(string _name) : name(_name), location(-1) {
     cdebug << "Identifier constructor called with name: " << _name << endl;
 }
@@ -117,17 +113,6 @@ TernaryExpression::~TernaryExpression() {
     delete cond;
     delete true_branch;
     delete false_branch;
-}
-
-TypecastExpression::TypecastExpression(Type *_typ, Expression *_expr)
-    : typ(_typ), expr(_expr) {
-    cdebug << "TypecastExpression constructor called" << endl;
-}
-
-TypecastExpression::~TypecastExpression() {
-    cdebug << "TypecastExpression destructor called" << endl;
-    delete typ;
-    delete expr;
 }
 
 FunctionInvocationExpression::FunctionInvocationExpression(Expression *_fn)
@@ -148,15 +133,6 @@ FunctionInvocationExpression::~FunctionInvocationExpression() {
         delete expr;
     }
     delete params;
-}
-
-TypeExpression::TypeExpression(Operator _op, Type *_typ) : op(_op), typ(_typ) {
-    cdebug << "TypeExpression constructor called" << endl;
-}
-
-TypeExpression::~TypeExpression() {
-    cdebug << "TypeExpression destructor called" << endl;
-    delete typ;
 }
 
 BinaryExpression::BinaryExpression(Expression *_lhs, Operator _op,
@@ -246,15 +222,58 @@ GotoStatement::GotoStatement(char *_label) : label(_label) {
 }
 
 DeclarationSpecifiers::DeclarationSpecifiers()
-    : storage_specs(), type{TS_UNDEFINED}, type_quals(), func_specs() {
+    : storage_specs(), type_specs{}, type_quals(), func_specs() {
     cdebug << "DeclarationSpecifiers constructor called" << endl;
 }
 
-void DeclarationSpecifiers::set_type(TypeSpecifier ts) {
-    if (type != TS_UNDEFINED) {
-        cout << "ERROR: redeclaration of type not allowed" << endl;
+void DeclarationSpecifiers::add_type_specifier(TypeSpecifier ts) {
+    // FLOAT cannot be combined with unsigned/signed
+    if (ts == TS_FLOAT || ts == TS_DOUBLE) {
+        if (!type_specs.empty()) {
+            cout << "ERROR: cannot combine " << ts2str(ts) << " with previous decls\n";
+            return;
+        }
     }
-    type = ts;
+    else if (type_specs.find(TS_FLOAT) != type_specs.end() || type_specs.find(TS_DOUBLE) != type_specs.end()) {
+        cout << "ERROR: cannot combine a type specifier with floating point types\n";
+        return;
+    }
+
+    if (ts == TS_CHAR) {
+        if (type_specs.size() == 1 && !(*type_specs.begin() == TS_SIGNED || *type_specs.begin() == TS_UNSIGNED)) {
+            cout << "ERROR: cannot combine char with previous decls\n";
+            return;
+        }
+        else if (type_specs.size() > 1) {
+            cout << "ERROR: cannot combine char with previous decls\n";
+            return;
+        }
+    }
+    else if (ts == TS_SIGNED || ts == TS_UNSIGNED) {
+        if ((ts == TS_SIGNED && type_specs.find(TS_UNSIGNED) != type_specs.end()) ||
+            (ts == TS_UNSIGNED && type_specs.find(TS_SIGNED) != type_specs.end())) {
+            cout << "ERROR: cannot combine signed with unsigned\n";
+            return;
+        }
+    }
+    else if (ts == TS_SHORT) {
+        if (type_specs.find(TS_CHAR) != type_specs.end() || type_specs.find(TS_LONG) != type_specs.end()) {
+            cout << "ERROR: cannot combine short with char, long or llong\n";
+            return;
+        }
+    }
+    else if (ts == TS_LONG) {
+        if (type_specs.find(TS_CHAR) != type_specs.end() || type_specs.find(TS_SHORT) != type_specs.end()) {
+            cout << "ERROR: cannot combine long with char or short\n";
+            return;
+        }
+    }
+    else if (ts == TS_INT) {
+        if (type_specs.find(TS_CHAR) != type_specs.end()) {
+            cout << "ERROR: cannot combine int with char\n";
+        }
+    }
+    type_specs.insert(ts);
 }
 
 void DeclarationSpecifiers::add_storage_specifier(StorageSpecifier ss) {
@@ -299,7 +318,7 @@ Declaration::Declaration(DeclarationSpecifiers *_decl_specs,
 
 Declaration::~Declaration() {
     cdebug << "Declaration destructor called" << endl;
-    delete typ;
+    // TODO delete stuff
 }
 
 DeclarationStatement::DeclarationStatement(Declaration *_decl) : decl(_decl) {
@@ -372,34 +391,23 @@ Function::~Function() {
 }
 
 TranslationUnit::TranslationUnit()
-    : functions(new vector<Function *>),
-      decls(new vector<DeclarationStatement *>), is_decl(new vector<bool>) {
+    : nodes(new vector<Node *>) {
     cdebug << "TranslationUnit constructor called" << endl;
 }
 
 void TranslationUnit::add_function(Function *func) {
-    functions->push_back(func);
-    is_decl->push_back(false);
+    nodes->push_back(func);
 }
 
 void TranslationUnit::add_declaration(DeclarationStatement *decl) {
-    decls->push_back(decl);
-    is_decl->push_back(true);
+    nodes->push_back(decl);
 }
 
 TranslationUnit::~TranslationUnit() {
     cdebug << "TranslationUnit destructor called" << endl;
-    delete is_decl;
-    for (auto decl : *decls) {
-        delete decl;
+    for (auto *node : *nodes) {
+        delete node;
     }
-
-    delete decls;
-
-    for (auto func : *functions) {
-        delete func;
-    }
-
-    delete functions;
+    delete nodes;
 }
 } // namespace ast

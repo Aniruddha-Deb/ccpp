@@ -11,6 +11,7 @@
 
 #include <map>
 #include "ast.hpp"
+#include "debug.hpp"
 
 int intLiteralToInt(string &s){
   return stoi(s);
@@ -46,11 +47,13 @@ void TranslationUnit::codegen() {
   // Create a new builder for the module.
   llvm_builder = std::make_unique<llvm::IRBuilder<>>(*llvm_ctx);
 
-  for(auto func_ptr: *functions){
-    // cout<<"READ FUNC DEF"<<endl;
-    llvm::Function* func_ir = func_ptr->codegen();
-    func_ir->print(errs());
-    
+  Function* func_ptr;
+  for (auto node_ptr: *nodes){
+    if ((func_ptr = dynamic_cast<Function*>(node_ptr))) {
+      // cout<<"READ FUNC DEF"<<endl;
+      llvm::Function* func_ir = func_ptr->codegen();
+      func_ir->print(errs());
+    }
   }
 }
 
@@ -126,6 +129,8 @@ Value* BlockStatement::codegen(){
 
 
 llvm::Function *Function::codegen() {
+  // Uncommenting this causes a segfault !?
+  // cdebug << "Generating function code " << func_decl->ident->name << endl;
   int num_args = 0;
   if(params){
     num_args = params->params->size();
@@ -170,9 +175,5 @@ Value* Identifier::codegen(){
   }
   return v;
 }
-
-
-
-
 
 } // namespace ast

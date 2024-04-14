@@ -37,11 +37,6 @@ string listify(std::vector<T*>& nodes, string prefix) {
 // Expressions
 ////////////////////////////////////////////////////////////////////////////////
 
-string Type::dump_ast(string prefix) {
-  cdebug << "Type::dump_ast: " << endl;
-  return name;
-}
-
 string Identifier::dump_ast(string prefix) {
   cdebug << "Identifier::dump_ast: " << endl;
   return name + "[" + to_string(location) + "]";
@@ -53,12 +48,6 @@ string TernaryExpression::dump_ast(string prefix) {
          "`- cond: " + cond->dump_ast(prefix + "|  ") + "\n" + prefix +
          "`- true_branch: " + true_branch->dump_ast(prefix + "|  ") + "\n" + prefix +
          "`- false_branch: " + false_branch->dump_ast(prefix + "   ");
-}
-
-string TypecastExpression::dump_ast(string prefix) {
-  cdebug << "TypecastExpression::dump_ast: " << endl;
-  return "typecast\n" + prefix + "`- type: " + typ->dump_ast(prefix + "|  ") +
-         "\n" + prefix + "`- expr: " + expr->dump_ast(prefix + "   ");
 }
 
 string FunctionInvocationExpression::dump_ast(string prefix) {
@@ -79,12 +68,6 @@ string FunctionInvocationExpression::dump_ast(string prefix) {
     result += "\n" + prefix + "`- " + param_str;
   }
   return result;
-}
-
-string TypeExpression::dump_ast(string prefix) {
-  cdebug << "TypeExpression::dump_ast: " << endl;
-  return op2str(op) + "\n" + prefix +
-         "`- type: " + typ->dump_ast(prefix + "   ");
 }
 
 string BinaryExpression::dump_ast(string prefix) {
@@ -112,11 +95,16 @@ string Literal::dump_ast(string prefix) {
 string DeclarationSpecifiers::dump_ast(string prefix) {
   cdebug << "DeclarationSpecifiers::dump_ast: " << endl;
   stringstream s;
-  s << ts2str(type);
   if (!storage_specs.empty()) {
     s << "\n" << prefix << "`- ss: ";
     for (auto ss : storage_specs) {
       s << ss2str(ss) << " ";
+    }
+  }
+  if (!type_specs.empty()) {
+    s << "\n" << prefix << "`- ss: ";
+    for (auto ts : type_specs) {
+      s << ts2str(ts) << " ";
     }
   }
   if (!type_quals.empty()) {
@@ -277,15 +265,11 @@ string Function::dump_ast(string prefix) {
 
 string TranslationUnit::dump_ast(string prefix) {
   cdebug << "TranslationUnit::dump_ast: " << endl;
-  if (is_decl->size() == 0) {
+  if (nodes->size() == 0) {
     return "translation_unit (empty)";
   }
   string result = "translation_unit:\n";
 
-  int func_itr = 0;
-  int decl_itr = 0;
-
-  return listify<Function>(*functions, "");
-  // TODO return decls as well
+  return listify<Node>(*nodes, "");
 }
 } // namespace ast

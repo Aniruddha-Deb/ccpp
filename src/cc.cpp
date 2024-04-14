@@ -30,20 +30,10 @@ main(int argc, char **argv)
 
   std::cout << std::endl;
 
-  // tu->scopify((symboltable*) 0, (int*) 0);
+  tu->scopify();
+  std::cout << "Done scopifying" << std::endl;
   std::cout << tu->dump_ast("") << std::endl;
 
-  /*
-  for (auto f : tu->m_functions) {
-      std::cout << "function: " << f->return_type->name << " " << f->name << std::endl;
-      std::cout << "params:" << std::endl;
-      for (auto p : f->parameters->params) {
-          std::cout << p->type->name << " " << p->name << std::endl;
-      }
-      std::cout << "statements:" << std::endl;
-      std::cout << f->statement_block->statements.size() << std::endl;
-  }
-  */
   printf("retv = %d\n", ret);
   tu->codegen();
   exit(0);

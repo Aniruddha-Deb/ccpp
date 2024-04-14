@@ -3,13 +3,15 @@
 
 using namespace std;
 
-void symboltable::enter_scope(){
+SymbolTable::SymbolTable(): scopestack(), curr_symb_identifier{0} {}
+
+void SymbolTable::enter_scope(){
   // cout<<"ENTERSCOPE---"<<endl;
-  unordered_map<string, int> newscope;
+  unordered_map<string, SymbolInfo> newscope;
   scopestack.push(newscope);
 }
 
-void symboltable::exit_scope(){
+void SymbolTable::exit_scope(){
   // cout<<"EXITSCOPE\n";
   if(scopestack.empty()){
     cout<<"PANIC EXIT_SCOPE\n"<<endl;
@@ -19,7 +21,7 @@ void symboltable::exit_scope(){
   }
 }
 
-bool symboltable::check_scope(string x){
+bool SymbolTable::check_scope(string x){
   // cout<<"CHECK:"<<x<<"->"<<endl;
   if(scopestack.empty()){
     cout<<"PANIC CHECK_SCOPE\n";
@@ -31,7 +33,7 @@ bool symboltable::check_scope(string x){
   }
 }
 
-int symboltable::find_symbol(string x){
+SymbolInfo SymbolTable::find_symbol(string x){
   // cout<<"FIND:"<<x<<"->"<<endl;
   auto copystack = scopestack;
   while(!copystack.empty()){
@@ -41,22 +43,26 @@ int symboltable::find_symbol(string x){
     }
     copystack.pop();
   }
-  return -1;
+  return {-1, UNK};
 }
 
-void symboltable::add_symbol(string x, int location){
+void SymbolTable::reset_symb_identifier() {
+    curr_symb_identifier = 0;
+}
+
+void SymbolTable::add_symbol(string x, SymbolType type){
   // cout<<"ADD:"<<x<<"->"<<endl;
   if(check_scope(x)){
     cout<<"PANIC ADD_SYMBOL\n";
   }
   else{
-    scopestack.top()[x] = location;
+    scopestack.top()[x] = {curr_symb_identifier, type};
+    curr_symb_identifier++;
   }
 }
 
-
 // int main(){
-//   symboltable* s = new symboltable;
+//   SymbolTable* s = new SymbolTable;
 //   s->enter_scope();
 //   s->add_symbol("HI", 0);
 //   cout<<s->check_scope("HI");

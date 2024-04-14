@@ -22,8 +22,6 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
     ast::Statement*        ast_statement;
     ast::BlockStatement*   ast_block_statement;
     ast::Function*         ast_function;
-    // ast::Parameter*        ast_parameter;
-    ast::Type*             ast_type;
     ast::Expression*       ast_expression;
     ast::Declaration*      ast_declaration;
     ast::BinaryExpression* ast_binary_expression;
@@ -71,7 +69,6 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 %nterm <ast_function> function_definition
 %nterm <ast_parameter_list> parameter_list
 // %nterm <ast_parameter>  parameter
-%nterm <ast_type>  type_name
 %nterm <ast_block_statement> statement_list
 %nterm <ast_block_statement> compound_statement
 %nterm <ast_block_statement> block_item_list
@@ -144,6 +141,9 @@ string
     : STRING_LITERAL { $$ = new ast::Literal($1, ast::LT_STRING); }
     ;
 
+type_name
+    : 
+
 postfix_expression
     : primary_expression { $$ = $1; }
     | postfix_expression '[' expression ']'
@@ -165,9 +165,6 @@ unary_expression
     | INC_OP unary_expression { $$ = new ast::UnaryExpression(ast::OP_PRE_INCR, $2); }
     | DEC_OP unary_expression { $$ = new ast::UnaryExpression(ast::OP_PRE_DECR, $2); }
     | unary_operator cast_expression { $$ = new ast::UnaryExpression($1, $2); }
-    | SIZEOF unary_expression { $$ = new ast::UnaryExpression(ast::OP_SIZEOF, $2); }
-    | SIZEOF '(' type_name ')' { $$ = new ast::TypeExpression(ast::OP_SIZEOF, $3); }
-    | ALIGNOF '(' type_name ')' { $$ = new ast::TypeExpression(ast::OP_ALIGNOF, $3); }
     ;
 
 unary_operator
@@ -179,16 +176,11 @@ unary_operator
     | '!' { $$ = ast::OP_BOOL_NOT; }
     ;
 
-cast_expression
-    : unary_expression { $$ = $1; }
-    | '(' type_name ')' cast_expression { $$ = new ast::TypecastExpression($2, $4); }
-    ;
-
 multiplicative_expression
-    : cast_expression { $$ = $1; }
-    | multiplicative_expression '*' cast_expression { $$ = new ast::BinaryExpression($1, ast::OP_MUL, $3); }
-    | multiplicative_expression '/' cast_expression { $$ = new ast::BinaryExpression($1, ast::OP_DIV, $3); }
-    | multiplicative_expression '%' cast_expression { $$ = new ast::BinaryExpression($1, ast::OP_MOD, $3); }
+    : unary_expression { $$ = $1; }
+    | multiplicative_expression '*' unary_expression { $$ = new ast::BinaryExpression($1, ast::OP_MUL, $3); }
+    | multiplicative_expression '/' unary_expression { $$ = new ast::BinaryExpression($1, ast::OP_DIV, $3); }
+    | multiplicative_expression '%' unary_expression { $$ = new ast::BinaryExpression($1, ast::OP_MOD, $3); }
     ;
 
 additive_expression
@@ -286,8 +278,8 @@ declaration
 declaration_specifiers
 	: storage_class_specifier declaration_specifiers { $2->add_storage_specifier($1); $$ = $2; }
 	| storage_class_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_storage_specifier($1); }
-	| type_specifier declaration_specifiers { $2->set_type($1); $$ = $2; }
-	| type_specifier { $$ = new ast::DeclarationSpecifiers(); $$->set_type($1); }
+	| type_specifier declaration_specifiers { $2->add_type_specifier($1); $$ = $2; }
+	| type_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_type_specifier($1); }
 	| type_qualifier declaration_specifiers { $2->add_type_qualifier($1); $$ = $2; }
 	| type_qualifier { $$ = new ast::DeclarationSpecifiers(); $$->add_type_qualifier($1); }
 	| function_specifier declaration_specifiers { $2->add_func_specifier($1); $$ = $2; }
@@ -360,7 +352,7 @@ parameter_list
 pure_declaration
 	: declaration_specifiers pointer_list IDENTIFIER { $$ = new ast::PureDeclaration($1, $2, new ast::Identifier($3)); } 
 	| declaration_specifiers IDENTIFIER { $$ = new ast::PureDeclaration($1, 0, new ast::Identifier($2)); }
-  ;
+        ;
 
 /* -Statements--------------------------------------------------------------- */
 

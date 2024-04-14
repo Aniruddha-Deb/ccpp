@@ -1,152 +1,224 @@
 #include "ast.hpp"
+#include "debug.hpp"
 
 namespace ast {
 
-void Type::scopify(symboltable *s, int *new_location) {}
+static SymbolTable *table;
 
-void Identifier::scopify(symboltable *s, int *new_location) {
-  location = s->find_symbol(name);
+SymbolType typespecs2st(std::set<TypeSpecifier> type_specs) {
+  if (type_specs.find(TS_FLOAT) != type_specs.end()) return FP32;
+  if (type_specs.find(TS_DOUBLE) != type_specs.end()) return FP64;
+  if (type_specs.find(TS_UNSIGNED) != type_specs.end()) {
+    if (type_specs.find(TS_SHORT) != type_specs.end()) return U16;
+    if (type_specs.find(TS_LONG) != type_specs.end()) return U64;
+    return U32;
+  }
+  if (type_specs.find(TS_CHAR) != type_specs.end()) {
+    if (type_specs.find(TS_SIGNED) != type_specs.end()) return I8;
+    return U8;
+  }
+  if (type_specs.find(TS_SHORT) != type_specs.end()) return I16;
+  if (type_specs.find(TS_LONG) != type_specs.end()) return I64;
+  return I32;
 }
 
-void TernaryExpression::scopify(symboltable *s, int *new_location) {
-  cond->scopify(s, new_location);
-  true_branch->scopify(s, new_location);
-  false_branch->scopify(s, new_location);
+void Identifier::scopify() {
+  cdebug << "Identifier::scopify: " << endl;
+  location = table->find_symbol(name).pos;
 }
 
-void TypecastExpression::scopify(symboltable *s, int *new_location) {
-  expr->scopify(s, new_location);
+void TernaryExpression::scopify() {
+  cdebug << "TernaryExpression::scopify: " << endl;
+  cond->scopify();
+  true_branch->scopify();
+  false_branch->scopify();
 }
 
-void FunctionInvocationExpression::scopify(symboltable *s, int *new_location) {
-  fn->scopify(s, new_location);
+void FunctionInvocationExpression::scopify() {
+  cdebug << "FunctionInvocationExpression::scopify: " << endl;
+  fn->scopify();
   if (params) {
     for (int i = 0; i < params->size(); i++) {
-      (*params)[i]->scopify(s, new_location);
+      (*params)[i]->scopify();
     }
   }
 }
 
-void TypeExpression::scopify(symboltable *s, int *new_location) { return; }
-
-void BinaryExpression::scopify(symboltable *s, int *new_location) {
-  lhs->scopify(s, new_location);
-  rhs->scopify(s, new_location);
+void BinaryExpression::scopify() {
+  cdebug << "BinaryExpression::scopify: " << endl;
+  lhs->scopify();
+  rhs->scopify();
 }
 
-void UnaryExpression::scopify(symboltable *s, int *new_location) {
-  expr->scopify(s, new_location);
+void UnaryExpression::scopify() {
+  cdebug << "UnaryExpression::scopify: " << endl;
+  expr->scopify();
 }
 
-void Literal::scopify(symboltable *s, int *new_location) { return; }
-
-void ExpressionStatement::scopify(symboltable *s, int *new_location) {
-  expr->scopify(s, new_location);
+void Literal::scopify() {
+  cdebug << "Literal::scopify: " << endl; 
+  return;
 }
 
-void IfStatement::scopify(symboltable *s, int *new_location) {
-  cond->scopify(s, new_location);
-  s->enter_scope();
-  true_branch->scopify(s, new_location);
-  s->exit_scope();
+void ExpressionStatement::scopify() {
+  cdebug << "ExpressionStatement::scopify: " << endl;
+  expr->scopify();
+}
+
+void IfStatement::scopify() {
+  cdebug << "IfStatement::scopify: " << endl;
+  cond->scopify();
+  table->enter_scope();
+  true_branch->scopify();
+  table->exit_scope();
   if (false_branch) {
-    s->enter_scope();
-    false_branch->scopify(s, new_location);
-    s->exit_scope();
+    table->enter_scope();
+    false_branch->scopify();
+    table->exit_scope();
   }
 }
 
-void WhileStatement::scopify(symboltable *s, int *new_location) {
-  cond->scopify(s, new_location);
-  s->enter_scope();
-  stmt->scopify(s, new_location);
-  s->exit_scope();
+void SwitchStatement::scopify() {
+  cdebug << "SwitchStatement::scopify: " << endl;
+  return;
 }
 
-void DoWhileStatement::scopify(symboltable *s, int *new_location) {
-  cond->scopify(s, new_location);
-  s->enter_scope();
-  stmt->scopify(s, new_location);
-  s->exit_scope();
+void WhileStatement::scopify() {
+  cdebug << "WhileStatement::scopify: " << endl;
+  cond->scopify();
+  table->enter_scope();
+  stmt->scopify();
+  table->exit_scope();
 }
 
-void ReturnStatement::scopify(symboltable *s, int *new_location) {
-  ret_expr->scopify(s, new_location);
+void DoWhileStatement::scopify() {
+  cdebug << "DoWhileStatement::scopify: " << endl;
+  cond->scopify();
+  table->enter_scope();
+  stmt->scopify();
+  table->exit_scope();
 }
 
-void Declaration::scopify(symboltable *s, int *new_location) {
-  if (s->check_scope(Ident->name)) {
-    cout << "PANIC REDECLARATION\n";
-  } else {
-    (*new_location)++;
-    s->add_symbol(Ident->name, (*new_location));
-    Ident->scopify(s, new_location);
-  }
+void ContinueStatement::scopify() {
+  cdebug << "ContinueStatement::scopify: " << endl;
+  return;
+}
+void BreakStatement::scopify() {
+  cdebug << "BreakStatement::scopify: " << endl;
+  return;
+}
+void GotoStatement::scopify() {
+  cdebug << "GotoStatement::scopify: " << endl;
+  return;
+}
+void CaseStatement::scopify() {
+  cdebug << "CaseStatement::scopify: " << endl;
+  return;
+}
+void LabeledStatement::scopify() {
+  cdebug << "LabeledStatement::scopify: " << endl;
+  return;
 }
 
-void DeclarationStatement::scopify(symboltable *s, int *new_location) {
-  decl->scopify(s, new_location);
+void ReturnStatement::scopify() {
+  cdebug << "ReturnStatement::scopify: " << endl;
+  ret_expr->scopify();
 }
 
-void BlockStatement::scopify(symboltable *s, int *new_location) {
-  for (auto stmt : *this) {
-    stmt->scopify(s, new_location);
-  }
+void DeclarationSpecifiers::scopify() {
+  cdebug << "DeclarationSpecifiers::scopify: " << endl;
+  return;
 }
 
-void Parameter::scopify(symboltable *s, int *new_location) {
-  if (s->check_scope(name)) {
-    cout << "PANIC REPEATED PARAMETER\n";
-  } else {
-    (*new_location)++;
-    s->add_symbol(name, *new_location);
-    location = *new_location;
-  }
+void InitDeclarator::scopify() {
+  cdebug << "InitDeclarator::scopify: " << endl;
+  cout << "Error: should not call scopify on an InitDeclarator\n";
+  return;
 }
 
-void Function::scopify(symboltable *s, int *new_location) {
-  std::string name = func_decl->ident->name;
-  if (s->check_scope(name)) {
-    cout << "PANIC REDECLARATION\n";
-  } else {
-    s->add_symbol(name, 0);
-    *new_location = 0;
-    s->enter_scope();
-    if (params) {
-      for (auto param : *params) {
-        param->scopify(s, new_location);
-      }
+void Declaration::scopify() {
+  cdebug << "Declaration::scopify: " << endl;
+  for (InitDeclarator *decl : *decl_list) {
+    if (table->check_scope(decl->ident->name)) {
+      cout << "PANIC REDECLARATION\n";
     }
-    stmts->scopify(s, new_location);
-    s->exit_scope();
+    else {
+      if (decl->ptr_depth > 0) {
+        table->add_symbol(decl->ident->name, PTR);
+      }
+      else {
+        table->add_symbol(decl->ident->name, typespecs2st(decl_specs->type_specs));
+      }
+      decl->ident->scopify();
+    }
   }
 }
 
-void TranslationUnit::scopify(symboltable *s, int *new_location) {
-  if (is_decl->size() == 0) {
+void DeclarationStatement::scopify() {
+  cdebug << "DeclarationStatement::scopify: " << endl;
+  decl->scopify();
+}
+
+void BlockStatement::scopify() {
+  cdebug << "BlockStatement::scopify: " << endl;
+  for (auto stmt : *this) {
+    stmt->scopify();
+  }
+}
+
+void PureDeclaration::scopify() {
+  cdebug << "PureDeclaration::scopify: " << endl;
+  if (table->check_scope(ident->name)) {
+    cout << "PANIC REDECLARATION\n";
+  }
+  else {
+    if (ptr_depth > 0) {
+      table->add_symbol(ident->name, PTR);
+    }
+    else {
+      table->add_symbol(ident->name, typespecs2st(decl_specs->type_specs));
+    }
+    ident->scopify();
+  }
+}
+
+void FunctionParameterList::scopify() {
+  cdebug << "FunctionParameterList::scopify: " << endl;
+  // should have entered a new scope already in function
+  for (PureDeclaration *decl : *params) {
+    decl->scopify();
+  }
+}
+
+void Function::scopify() {
+  std::string name = func_decl->ident->name;
+  cdebug << "Function::scopify: " << name << endl;
+  if (table->check_scope(name)) {
+    cout << "PANIC REDECLARATION\n";
+  } else {
+    table->add_symbol(name, FUNC);
+    table->reset_symb_identifier();
+    table->enter_scope();
+    if (params) params->scopify();
+    if (stmts) stmts->scopify();
+    table->exit_scope();
+  }
+}
+
+void TranslationUnit::scopify() {
+  cdebug << "TranslationUnit::scopify: " << endl;
+  if (nodes->size() == 0) {
     return;
   }
-  s = new symboltable;
-  new_location = new int;
-  *new_location = 0;
 
-  s->enter_scope();
+  table = new SymbolTable();
 
-  int func_itr = 0;
-  int decl_itr = 0;
+  table->enter_scope();
 
-  for (int i = 0; i < is_decl->size(); i++) {
-    if (!(*is_decl)[i]) {
-      (*functions)[func_itr]->scopify(s, new_location);
-      func_itr++;
-    } else {
-      *new_location = decl_itr - decls->size() - 1;
-      (*decls)[decl_itr]->scopify(s, new_location);
-      decl_itr++;
-    }
+  for (auto node : *nodes) {
+      node->scopify();
   }
 
-  delete s;
-  delete new_location;
+  delete table;
 }
 };

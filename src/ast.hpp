@@ -128,15 +128,7 @@ string fs2str(FunctionSpecifier fs);
 
 struct Node {
   virtual string dump_ast(string prefix) = 0;
-  // virtual //void scopify(symboltable *s, int *new_location) = 0;
-};
-
-struct Type : Node {
-  string name;
-
-  Type(string _name);
-  string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  virtual void scopify() = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -155,7 +147,7 @@ struct Identifier : Expression {
   Identifier(string _name);
   string dump_ast(string prefix);
   llvm::Value* codegen() override;
-  void scopify(symboltable *s, int *new_location);
+  void scopify();
 };
 
 struct TernaryExpression : Expression {
@@ -167,18 +159,8 @@ struct TernaryExpression : Expression {
                     Expression *_false_branch);
 
   string dump_ast(string prefix);
-  void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~TernaryExpression();
-};
-
-struct TypecastExpression : Expression {
-  Type *typ;
-  Expression *expr;
-
-  TypecastExpression(Type *_typ, Expression *_expr);
-  string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
-  ~TypecastExpression();
 };
 
 struct FunctionInvocationExpression : Expression {
@@ -190,18 +172,8 @@ struct FunctionInvocationExpression : Expression {
   FunctionInvocationExpression(Expression *_fn, vector<Expression *> *_params);
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~FunctionInvocationExpression();
-};
-
-struct TypeExpression : Expression {
-  Operator op;
-  Type *typ;
-
-  TypeExpression(Operator _op, Type *_typ);
-  string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
-  ~TypeExpression();
 };
 
 struct BinaryExpression : Expression {
@@ -211,7 +183,7 @@ struct BinaryExpression : Expression {
 
   BinaryExpression(Expression *_lhs, Operator _op, Expression *_rhs);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   llvm::Value* codegen() override;
   ~BinaryExpression();
 };
@@ -222,7 +194,7 @@ struct UnaryExpression : Expression {
 
   UnaryExpression(Operator _op, Expression *_expr);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
 };
 
 struct Literal : Expression {
@@ -230,7 +202,7 @@ struct Literal : Expression {
   LiteralType ltype;
 
   Literal(string _value, LiteralType _ltype);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   llvm::Value* codegen() override;
   string dump_ast(string prefix);
 };
@@ -241,19 +213,19 @@ struct Literal : Expression {
 
 struct DeclarationSpecifiers : Node {
   std::set<StorageSpecifier> storage_specs;
-  TypeSpecifier type;
+  std::set<TypeSpecifier> type_specs;
   std::set<TypeQualifier> type_quals;
   std::set<FunctionSpecifier> func_specs;
 
   DeclarationSpecifiers();
 
-  void set_type(TypeSpecifier ts);
+  void add_type_specifier(TypeSpecifier ts);
   void add_storage_specifier(StorageSpecifier ss);
   void add_type_qualifier(TypeQualifier tq);
   void add_func_specifier(FunctionSpecifier fs);
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
 };
 
 struct PureDeclaration : Node {
@@ -264,7 +236,7 @@ struct PureDeclaration : Node {
   PureDeclaration(DeclarationSpecifiers* _decl_specs, int _ptr_depth, Identifier *_ident);
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~PureDeclaration();
 };
 
@@ -275,7 +247,7 @@ struct FunctionParameterList : Node {
 
   FunctionParameterList(std::vector<PureDeclaration*>* _params, bool _has_varargs);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~FunctionParameterList();
 };
 
@@ -288,20 +260,17 @@ struct InitDeclarator : Node {
   InitDeclarator(Identifier *_ident, Expression *_init_expr);
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~InitDeclarator();
 };
 
 struct Declaration : Node {
-  Type *typ;
-  Identifier *Ident;
-
   DeclarationSpecifiers* decl_specs;
   std::vector<InitDeclarator*>* decl_list;
 
   Declaration(DeclarationSpecifiers* _decl_specs , vector<InitDeclarator*> *_decl_list);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~Declaration();
 };
 
@@ -319,7 +288,7 @@ struct DeclarationStatement : Statement {
 
   DeclarationStatement(Declaration *_decl);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   // llvm::Value* codegen();
   ~DeclarationStatement();
 };
@@ -329,7 +298,7 @@ struct ExpressionStatement : Statement {
 
   ExpressionStatement(Expression *_expr);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   llvm::Value* codegen() override;
   ~ExpressionStatement();
 };
@@ -343,7 +312,7 @@ struct IfStatement : Statement {
   IfStatement(Expression *_cond, Statement *_true_branch,
               Statement *_false_branch);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   // llvm::Value* codegen();
   ~IfStatement();
 };
@@ -355,6 +324,7 @@ struct SwitchStatement : Statement {
 
   SwitchStatement(Expression* _expr, Statement* _stmt);
   string dump_ast(string prefix);
+  void scopify();
   // llvm::Value* codegen();
   ~SwitchStatement();
 };
@@ -366,7 +336,7 @@ struct WhileStatement : Statement {
 
   WhileStatement(Expression *_cond, Statement *_stmt);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   // llvm::Value* codegen();
   ~WhileStatement();
 };
@@ -378,7 +348,7 @@ struct DoWhileStatement : Statement {
 
   DoWhileStatement(Expression *_cond, Statement *_stmt);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   // llvm::Value* codegen();
   ~DoWhileStatement();
 };
@@ -389,7 +359,7 @@ struct ReturnStatement : Statement {
 
   ReturnStatement(Expression *_ret_expr);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   llvm::Value* codegen() override;
   ~ReturnStatement();
 };
@@ -399,26 +369,26 @@ struct GotoStatement : Statement {
   GotoStatement(char* _label);
   string dump_ast(string prefix);
   // llvm::Value* codegen();
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
 };
 
 struct ContinueStatement : Statement {
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   // llvm::Value* codegen();
 };
 
 struct BreakStatement : Statement {
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   // llvm::Value* codegen();
 };
 
 struct BlockStatement : Statement, vector<Statement *> {
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
 
   llvm::Value* codegen() override;
   ~BlockStatement();
@@ -432,7 +402,7 @@ struct LabeledStatement : Statement {
   LabeledStatement(Identifier* _label, Statement* _stmt);
   string dump_ast(string prefix);
   // llvm::Value* codegen();
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~LabeledStatement();
 };
 
@@ -444,7 +414,7 @@ struct CaseStatement : Statement {
   CaseStatement(Expression* _const_expr, Statement* _stmt);
   string dump_ast(string prefix);
   // llvm::Value* codegen();
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   ~CaseStatement();
 };
 
@@ -460,16 +430,14 @@ struct Function : Node {
 
   Function(PureDeclaration* _func_decl, FunctionParameterList* _params, BlockStatement* _stmts);
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   llvm::Function* codegen(); 
   ~Function();
 };
 
 struct TranslationUnit : Node {
 
-  vector<Function *> *functions;
-  vector<DeclarationStatement *> *decls;
-  vector<bool> *is_decl;
+  vector<Node*> *nodes;
 
   TranslationUnit();
 
@@ -477,7 +445,7 @@ struct TranslationUnit : Node {
   void add_declaration(DeclarationStatement *decl);
 
   string dump_ast(string prefix);
-  //void scopify(symboltable *s, int *new_location);
+  void scopify();
   void codegen();
   ~TranslationUnit();
 };
