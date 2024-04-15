@@ -1,4 +1,6 @@
-int printf(char const *format, ...);
+int printf(char const *format, ...){
+  return (5);
+}
 
 int
 main(int argc, char **argv)
