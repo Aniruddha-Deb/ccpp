@@ -26,5 +26,5 @@ int main(){
     b =( a = 10);
     float* ad;
     (a >= b) & (4 > 2);
-    
+    return 0;
 }

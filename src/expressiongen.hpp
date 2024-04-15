@@ -29,20 +29,20 @@ namespace ast{
     switch (ty)
     {
     case I32:
-        llvm_builder->CreateAdd(L, R);
-        break;
+        return llvm_builder->CreateAdd(L, R);
+        
     case I64:
-        llvm_builder->CreateAdd(L, R);
-        break;
+        return llvm_builder->CreateAdd(L, R);
+        
     case U8:
-        llvm_builder->CreateAdd(L, R);
-        break;
+        return llvm_builder->CreateAdd(L, R);
+        
     case FP32:
-        llvm_builder->CreateFAdd(L, R);
-        break;
+        return llvm_builder->CreateFAdd(L, R);
+        
     case FP64:
-        llvm_builder->CreateFAdd(L, R);
-        break;
+        return llvm_builder->CreateFAdd(L, R);
+        
     default:
         return nullptr;
     }
@@ -52,20 +52,20 @@ namespace ast{
     switch (ty)
     {
     case I32:
-        llvm_builder->CreateSub(L, R);
-        break;
+        return llvm_builder->CreateSub(L, R);
+        
     case I64:
-        llvm_builder->CreateSub(L, R);
-        break;
+        return llvm_builder->CreateSub(L, R);
+        
     case U8:
-        llvm_builder->CreateSub(L, R);
-        break;
+        return llvm_builder->CreateSub(L, R);
+        
     case FP32:
-        llvm_builder->CreateFSub(L, R);
-        break;
+        return llvm_builder->CreateFSub(L, R);
+        
     case FP64:
-        llvm_builder->CreateFSub(L, R);
-        break;
+        return llvm_builder->CreateFSub(L, R);
+        
     default:
         return nullptr;
     }
@@ -75,20 +75,20 @@ namespace ast{
     switch (ty)
     {
     case I32:
-        llvm_builder->CreateMul(L, R);
-        break;
+        return llvm_builder->CreateMul(L, R);
+        
     case I64:
-        llvm_builder->CreateMul(L, R);
-        break;
+        return llvm_builder->CreateMul(L, R);
+        
     case U8:
-        llvm_builder->CreateMul(L, R);
-        break;
+        return llvm_builder->CreateMul(L, R);
+        
     case FP32:
-        llvm_builder->CreateFMul(L, R);
-        break;
+        return llvm_builder->CreateFMul(L, R);
+        
     case FP64:
-        llvm_builder->CreateFMul(L, R);
-        break;
+        return llvm_builder->CreateFMul(L, R);
+        
     default:
         return nullptr;
     }
@@ -98,20 +98,20 @@ Value* handleDiv(Value* L, Value* R, SymbolType ty){
     switch (ty)
         {
         case I32:
-            llvm_builder->CreateSDiv(L, R);
-            break;
+            return llvm_builder->CreateSDiv(L, R);
+            
         case I64:
-            llvm_builder->CreateSDiv(L, R);
-            break;
+            return llvm_builder->CreateSDiv(L, R);
+            
         case U8:
-            llvm_builder->CreateUDiv(L, R);
-            break;
+            return llvm_builder->CreateUDiv(L, R);
+            
         case FP32:
-            llvm_builder->CreateFDiv(L, R);
-            break;
+            return llvm_builder->CreateFDiv(L, R);
+            
         case FP64:
-            llvm_builder->CreateFDiv(L, R);
-            break;
+            return llvm_builder->CreateFDiv(L, R);
+            
         default:
             return nullptr;
         }
@@ -121,20 +121,20 @@ Value* handleGTE(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateICmpSGE(L, R);
-            break;
+            return llvm_builder->CreateICmpSGE(L, R);
+            
         case I64:
-            llvm_builder->CreateICmpSGE(L, R);
-            break;
+            return llvm_builder->CreateICmpSGE(L, R);
+            
         case U8:
-            llvm_builder->CreateICmpUGE(L, R);
-            break;
+            return llvm_builder->CreateICmpUGE(L, R);
+            
         case FP32:
-            llvm_builder->CreateFCmpOGE(L, R);
-            break;
+            return llvm_builder->CreateFCmpOGE(L, R);
+            
         case FP64:
-            llvm_builder->CreateFCmpOGE(L, R);
-            break;
+            return llvm_builder->CreateFCmpOGE(L, R);
+            
         default:
             return nullptr;
     }
@@ -144,20 +144,20 @@ Value* handleGT(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateICmpSGT(L, R);
-            break;
+            return llvm_builder->CreateICmpSGT(L, R);
+            
         case I64:
-            llvm_builder->CreateICmpSGT(L, R);
-            break;
+            return llvm_builder->CreateICmpSGT(L, R);
+            
         case U8:
-            llvm_builder->CreateICmpUGT(L, R);
-            break;
+            return llvm_builder->CreateICmpUGT(L, R);
+            
         case FP32:
-            llvm_builder->CreateFCmpOGT(L, R);
-            break;
+            return llvm_builder->CreateFCmpOGT(L, R);
+            
         case FP64:
-            llvm_builder->CreateFCmpOGT(L, R);
-            break;
+            return llvm_builder->CreateFCmpOGT(L, R);
+            
         default:
             return nullptr;
     }
@@ -167,20 +167,20 @@ Value* handleLTE(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateICmpSLE(L, R);
-            break;
+            return llvm_builder->CreateICmpSLE(L, R);
+            
         case I64:
-            llvm_builder->CreateICmpSLE(L, R);
-            break;
+            return llvm_builder->CreateICmpSLE(L, R);
+            
         case U8:
-            llvm_builder->CreateICmpULE(L, R);
-            break;
+            return llvm_builder->CreateICmpULE(L, R);
+            
         case FP32:
-            llvm_builder->CreateFCmpOLE(L, R);
-            break;
+            return llvm_builder->CreateFCmpOLE(L, R);
+            
         case FP64:
-            llvm_builder->CreateFCmpOLE(L, R);
-            break;
+            return llvm_builder->CreateFCmpOLE(L, R);
+            
         default:
             return nullptr;
     }
@@ -190,20 +190,20 @@ Value* handleLT(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateICmpSLT(L, R);
-            break;
+            return llvm_builder->CreateICmpSLT(L, R);
+            
         case I64:
-            llvm_builder->CreateICmpSLT(L, R);
-            break;
+            return llvm_builder->CreateICmpSLT(L, R);
+            
         case U8:
-            llvm_builder->CreateICmpULT(L, R);
-            break;
+            return llvm_builder->CreateICmpULT(L, R);
+            
         case FP32:
-            llvm_builder->CreateFCmpOLT(L, R);
-            break;
+            return llvm_builder->CreateFCmpOLT(L, R);
+            
         case FP64:
-            llvm_builder->CreateFCmpOLT(L, R);
-            break;
+            return llvm_builder->CreateFCmpOLT(L, R);
+            
         default:
             return nullptr;
     }
@@ -213,20 +213,20 @@ Value* handleEQ(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateICmpEQ(L, R);
-            break;
+            return llvm_builder->CreateICmpEQ(L, R);
+            
         case I64:
-            llvm_builder->CreateICmpEQ(L, R);
-            break;
+            return llvm_builder->CreateICmpEQ(L, R);
+            
         case U8:
-            llvm_builder->CreateICmpEQ(L, R);
-            break;
+            return llvm_builder->CreateICmpEQ(L, R);
+            
         case FP32:
-            llvm_builder->CreateFCmpOEQ(L, R);
-            break;
+            return llvm_builder->CreateFCmpOEQ(L, R);
+            
         case FP64:
-            llvm_builder->CreateFCmpOEQ(L, R);
-            break;
+            return llvm_builder->CreateFCmpOEQ(L, R);
+            
         default:
             return nullptr;
     }
@@ -236,20 +236,20 @@ Value* handleNE(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateICmpNE(L, R);
-            break;
+            return llvm_builder->CreateICmpNE(L, R);
+            
         case I64:
-            llvm_builder->CreateICmpNE(L, R);
-            break;
+            return llvm_builder->CreateICmpNE(L, R);
+            
         case U8:
-            llvm_builder->CreateICmpNE(L, R);
-            break;
+            return llvm_builder->CreateICmpNE(L, R);
+            
         case FP32:
-            llvm_builder->CreateFCmpONE(L, R);
-            break;
+            return llvm_builder->CreateFCmpONE(L, R);
+            
         case FP64:
-            llvm_builder->CreateFCmpONE(L, R);
-            break;
+            return llvm_builder->CreateFCmpONE(L, R);
+            
         default:
             return nullptr;
     }
@@ -260,8 +260,8 @@ Value* handleBAnd(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I1:
-            llvm_builder->CreateAnd(L, R);
-            break;
+            return llvm_builder->CreateAnd(L, R);
+            
         default:
             return nullptr;
     }
@@ -272,8 +272,8 @@ Value* handleBOr(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I1:
-            llvm_builder->CreateOr(L, R);
-            break;
+            return llvm_builder->CreateOr(L, R);
+            
         default:
             return nullptr;
     }
@@ -285,8 +285,8 @@ Value* handleBNot(Value* L, SymbolType ty){
     switch (ty)
     {
         case I1:
-            llvm_builder->CreateNot(L);
-            break;
+            return llvm_builder->CreateNot(L);
+            
         default:
             return nullptr;
     }
@@ -298,23 +298,23 @@ Value* handleAnd(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateAnd(L, R);
-            break;
+            return llvm_builder->CreateAnd(L, R);
+            
         case I64:
-            llvm_builder->CreateAnd(L, R);
-            break;
+            return llvm_builder->CreateAnd(L, R);
+            
         case U8:
-            llvm_builder->CreateAnd(L, R);
-            break;
+            return llvm_builder->CreateAnd(L, R);
+            
         case U32:
-            llvm_builder->CreateAnd(L, R);
-            break;
+            return llvm_builder->CreateAnd(L, R);
+            
         case U64:
-            llvm_builder->CreateAnd(L, R);
-            break;
+            return llvm_builder->CreateAnd(L, R);
+            
         case I1:
-            llvm_builder->CreateAnd(L, R);
-            break;
+            return llvm_builder->CreateAnd(L, R);
+            
         default:
             return nullptr;
     }
@@ -325,23 +325,23 @@ Value* handleOr(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateOr(L, R);
-            break;
+            return llvm_builder->CreateOr(L, R);
+            
         case I64:
-            llvm_builder->CreateOr(L, R);
-            break;
+            return llvm_builder->CreateOr(L, R);
+            
         case U8:
-            llvm_builder->CreateOr(L, R);
-            break;
+            return llvm_builder->CreateOr(L, R);
+            
         case U32:
-            llvm_builder->CreateOr(L, R);
-            break;
+            return llvm_builder->CreateOr(L, R);
+            
         case U64:
-            llvm_builder->CreateOr(L, R);
-            break;
+            return llvm_builder->CreateOr(L, R);
+            
         case I1:
-            llvm_builder->CreateOr(L, R);
-            break;
+            return llvm_builder->CreateOr(L, R);
+            
         default:
             return nullptr;
     }
@@ -352,23 +352,23 @@ Value* handleXor(Value* L, Value* R, SymbolType ty){
     switch (ty)
     {
         case I32:
-            llvm_builder->CreateXor(L, R);
-            break;
+            return llvm_builder->CreateXor(L, R);
+            
         case I64:
-            llvm_builder->CreateXor(L, R);
-            break;
+            return llvm_builder->CreateXor(L, R);
+            
         case U8:
-            llvm_builder->CreateXor(L, R);
-            break;
+            return llvm_builder->CreateXor(L, R);
+            
         case U32:
-            llvm_builder->CreateXor(L, R);
-            break;
+            return llvm_builder->CreateXor(L, R);
+            
         case U64:
-            llvm_builder->CreateXor(L, R);
-            break;
+            return llvm_builder->CreateXor(L, R);
+            
         case I1:
-            llvm_builder->CreateXor(L, R);
-            break;
+            return llvm_builder->CreateXor(L, R);
+            
         default:
             return nullptr;
     }

@@ -395,7 +395,7 @@ Value* UnaryExpression::get_address(){
 
 Value* ReturnStatement::codegen(){
   Value* ret_val = ret_expr->codegen();
-  llvm_builder->CreateRet(ret_val);
+  return llvm_builder->CreateRet(ret_val);
 
 }
 
@@ -478,12 +478,9 @@ llvm::Function *Function::codegen() {
     llvm_st[getVarName((*(params->params))[i]->ident, "l")] = Alloca;
     i++;
   }
-  cdebug << "Generating function code " << func_decl->ident->name << endl;
-  // for (auto &Arg : func->args())
-  //   llvm_st[std::string(Arg.getName())] = &Arg;
+
   if (Value *ret_val = stmts->codegen()) {
-    // llvm_builder->CreateRet(ret_val);
-    // creating return statement in retrunstatement->codegen() instead.
+
     verifyFunction(*func);
     return func;
   }
