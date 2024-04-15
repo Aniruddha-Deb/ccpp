@@ -20,9 +20,9 @@ int intLiteralToInt(string &s){
 };
 
 double floatLiteralToFloat(string &s){
-  cout<<"Entered stod "+ s<<endl;
+  // cdebug<<"Entered stod "+ s<<endl;
   double temp = stod(s);
-  cout<<"temp "<<temp<<endl;
+  // cdebug<<"temp "<<temp<<endl;
   return temp;
 }
 
@@ -151,7 +151,7 @@ void TranslationUnit::codegen() {
 
   DeclarationStatement* decl_ptr;
   for (auto node_ptr: *nodes){
-    cout<<"HI1"<<endl;
+    // cdebug<<"HI1"<<endl;
     if ((decl_ptr = dynamic_cast<DeclarationStatement*>(node_ptr))) {
       cout<<"READ FUNC DEF"<<endl;
       Value* v = decl_ptr->globalgen();
@@ -237,15 +237,37 @@ Value* Identifier::assign(Expression* rhs){
 
 }
 
+Value* Identifier::get_address(){
+  type_info.type = ident_info.stype;
+  type_info.ptr_depth = 0;   // REMOVE LATER, should resolve this during scopify
+  type_info.is_ref = true;
+
+  return llvm_st[getVarName(this, "l")];
+}
+
+
 Value *BinaryExpression::codegen() {
   if (op == OP_ASSIGN){
-    Value* a = lhs->assign(rhs);
-    if(a){
-      type_info.type = rhs->type_info.type;
-      type_info.is_ref = false;
-      type_info.ptr_depth = rhs->type_info.ptr_depth;
+    // cdebug<<"calling getaddr"<<endl;
+    Value* A = lhs->get_address(); 
+    // Value* a = lhs->assign(rhs);
+    // cdebug<<"calling codegen"<<endl;
+    Value* R = rhs->codegen();
+
+    type_info.type = rhs->type_info.type;
+    type_info.is_ref = false;                         // should this be rhs->is_ref?? Nope
+    type_info.ptr_depth = rhs->type_info.ptr_depth;
+    // cout<<lhs->type_info.type<<" "<<rhs->type_info.type<<endl<<lhs->type_info.ptr_depth<<" "<<rhs->type_info.ptr_depth<<endl<<lhs->type_info.is_ref<<endl;
+    if(true){
+
+    // (lhs->type_info.type == rhs->type_info.type) && (lhs->type_info.ptr_depth == rhs->type_info.ptr_depth) && (lhs->type_info.is_ref)
+      llvm_builder->CreateStore(R, A, "assigntemp");
+      return R;
     }
-    return a;
+    else{
+      cout<<"Assignment type mismatch";
+      return nullptr;
+    }
   }
   Value *L = lhs->codegen();
   Value *R = rhs->codegen();
@@ -310,6 +332,51 @@ Value *BinaryExpression::codegen() {
       return handleXor(L, R, lhs->type_info.type);
     default:
       cout<<"OP NOT FOUND"<<endl;
+  }
+}
+
+Value* UnaryExpression::codegen(){
+  Value* R;
+  switch (op){
+    case OP_DEREF:
+      // cdebug<<"HAW"<<endl;
+      R = expr->codegen();
+      type_info.type = expr->type_info.type;
+      type_info.ptr_depth = expr->type_info.ptr_depth ; // check if non negative??
+      // decrement ptr depth
+      type_info.is_ref = true;
+      return llvm_builder->CreateLoad((llvm::cast<llvm::PointerType>(R->getType()))->getElementType(), R, "dereftemp");
+    case OP_AND:
+      R = expr->get_address();
+      type_info.type = expr->type_info.type;
+      type_info.ptr_depth = expr->type_info.ptr_depth ; // check if non negative??
+      // increment ptr depth
+      type_info.is_ref = false;
+      return R;
+    default:
+      cout<<"Type mismatch"<<endl;
+      return nullptr;
+  }
+
+}
+
+Value* Expression::get_address(){
+  cout<<"get address of non ref type"<<endl;
+  return nullptr;
+}
+
+Value* UnaryExpression::get_address(){
+  Value* R;
+  switch (op){
+    case OP_DEREF:
+      R = expr->codegen();
+      type_info.type = expr->type_info.type;
+      type_info.ptr_depth = expr->type_info.ptr_depth; // change after ptr_depth is fixed
+      type_info.is_ref = true;
+      return R;
+    default:
+      cout<<"Type mismatch"<<endl;
+      return nullptr;
   }
 }
 

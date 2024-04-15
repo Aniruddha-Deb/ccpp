@@ -146,6 +146,7 @@ struct Expression : Node {
   ExprTypeInfo type_info;
   virtual llvm::Value* codegen();                      // codegen when rvalue
   virtual llvm::Value* assign(Expression* R);         // codegen when lvalue
+  virtual llvm::Value* get_address();                                // use this to replace assign               
 };
 
 struct Identifier : Expression {
@@ -156,6 +157,7 @@ struct Identifier : Expression {
   string dump_ast(string prefix);
   llvm::Value* codegen() override;
   llvm::Value* assign(Expression* R) override;
+  llvm::Value* get_address() override;
   void scopify();
 };
 
@@ -203,6 +205,8 @@ struct UnaryExpression : Expression {
   Expression *expr;
 
   UnaryExpression(Operator _op, Expression *_expr);
+  llvm::Value* codegen() override;
+  llvm::Value* get_address() override;
   string dump_ast(string prefix);                      // Add assign method
   void scopify();
 };

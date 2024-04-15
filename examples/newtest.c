@@ -1,6 +1,15 @@
 int foo(int a){
     int b = 7, c = 2;
+    b = 31;
     return a + 5;
+}
+
+int ptrtest(){
+    int * i;
+    int b = 0;
+    i = &(*(&b));
+    (*i) = b + b;
+    return 0;
 }
 
 int main(){
@@ -12,7 +21,9 @@ int main(){
     int a = 9;
     foo(a* 10);
     float x, y = d + e, z;
+    double w = 5.3;
     b =( a = 10);
+    float* ad;
     (a >= b) & (4 > 2);
     
 }

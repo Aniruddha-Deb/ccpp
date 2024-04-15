@@ -164,7 +164,8 @@ unary_expression
     : postfix_expression { $$ = $1; }
     | INC_OP unary_expression { $$ = new ast::UnaryExpression(ast::OP_PRE_INCR, $2); }
     | DEC_OP unary_expression { $$ = new ast::UnaryExpression(ast::OP_PRE_DECR, $2); }
-    | unary_operator cast_expression { $$ = new ast::UnaryExpression($1, $2); }
+ /*   | unary_operator cast_expression { $$ = new ast::UnaryExpression($1, $2); }   changed this*/
+    | unary_operator expression { $$ = new ast::UnaryExpression($1, $2); }
     ;
 
 unary_operator
