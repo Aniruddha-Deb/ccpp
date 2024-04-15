@@ -5,6 +5,7 @@ namespace ast {
 
 static SymbolTable *table;
 
+
 SymbolType typespecs2st(std::set<TypeSpecifier> type_specs) {
   if (type_specs.find(TS_FLOAT) != type_specs.end()) return FP32;
   if (type_specs.find(TS_DOUBLE) != type_specs.end()) return FP64;

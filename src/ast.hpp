@@ -283,6 +283,7 @@ struct Declaration : Node {
   string dump_ast(string prefix);
   void scopify();
   llvm::Value* codegen();
+  llvm::Value* globalgen();
   ~Declaration();
 };
 
@@ -302,6 +303,7 @@ struct DeclarationStatement : Statement {
   string dump_ast(string prefix);
   void scopify();
   llvm::Value* codegen() override;
+  llvm::Value* globalgen();
   ~DeclarationStatement();
 };
 

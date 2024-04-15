@@ -134,7 +134,7 @@ primary_expression
 
 constant
     : I_CONSTANT { $$ = new ast::Literal($1, ast::LT_INT_LIKE); }
-    | F_CONSTANT { $$ = new ast::Literal($1, ast::LT_FLOAT_LIKE); }
+    | F_CONSTANT { $$ = new ast::Literal($1, ast::LT_FLOAT_LIKE);}
     ;
 
 string

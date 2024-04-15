@@ -23,7 +23,7 @@ namespace ast{
     extern std::unique_ptr<llvm::Module> llvm_mod;
     extern std::unique_ptr<llvm::IRBuilder<>> llvm_builder;
     extern std::map<std::string, AllocaInst*> llvm_st;
-    extern std::map<std::string, AllocaInst*> global_st;
+    extern std::map<std::string, GlobalVariable*> global_st;
 
     Value* handleAdd(Value* L, Value* R, SymbolType ty){
     switch (ty)

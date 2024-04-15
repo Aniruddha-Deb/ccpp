@@ -35,7 +35,7 @@ namespace ast {
  std::unique_ptr<llvm::Module> llvm_mod;
  std::unique_ptr<llvm::IRBuilder<>> llvm_builder;
  std::map<std::string, AllocaInst*> llvm_st;
- std::map<std::string, AllocaInst*> global_st;
+ std::map<std::string, GlobalVariable*> global_st;
 
 
 
@@ -60,7 +60,7 @@ SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
 
 std::string getVarName(ast::Identifier *ident, std::string prefix){
   int location = ident->ident_info.pos;
-  return prefix + to_string(location);
+  return prefix + to_string(abs(location));
 }
 
 
@@ -123,12 +123,41 @@ llvm::Value* Declaration::codegen(){
   return nullptr;
 }
 
+
+llvm::Value* DeclarationStatement::globalgen(){
+  return decl->globalgen();
+}
+
+llvm::Value* Declaration::globalgen(){
+  cout<<"HI"<<endl;
+  for(auto init_decl: *decl_list){
+    GlobalVariable* A = new llvm::GlobalVariable(*llvm_mod, getType(decl_specs, init_decl->ptr_depth), false, llvm::GlobalValue::ExternalLinkage, 0, getVarName(init_decl->ident, "g"));
+    if(init_decl->init_expr){
+      Value* init_val = init_decl->init_expr->codegen();
+      llvm_builder->CreateStore(init_val, A);
+    }
+    global_st[getVarName(init_decl->ident, "g") ] = A;
+  }
+
+  return nullptr;
+}
+
 void TranslationUnit::codegen() {
   llvm_ctx = std::make_unique<llvm::LLVMContext>();
   llvm_mod = std::make_unique<llvm::Module>("Code Generator", *llvm_ctx);
 
   // Create a new builder for the module.
   llvm_builder = std::make_unique<llvm::IRBuilder<>>(*llvm_ctx);
+
+  DeclarationStatement* decl_ptr;
+  for (auto node_ptr: *nodes){
+    cout<<"HI1"<<endl;
+    if ((decl_ptr = dynamic_cast<DeclarationStatement*>(node_ptr))) {
+      cout<<"READ FUNC DEF"<<endl;
+      Value* v = decl_ptr->globalgen();
+      // func_ir->print(errs());
+    }
+  }
 
   Function* func_ptr;
   for (auto node_ptr: *nodes){
@@ -198,7 +227,8 @@ Value* Identifier::assign(Expression* rhs){
   type_info.is_ref = true;
 
   if((rhs->type_info.ptr_depth == type_info.ptr_depth) && (rhs->type_info.type == type_info.type)){
-    return llvm_builder->CreateStore(R, llvm_st[getVarName(this, "l")]);   // should we return this or value* of rhs? for chain assignments
+    llvm_builder->CreateStore(R, llvm_st[getVarName(this, "l")]);   // should we return this or value* of rhs? for chain assignments
+    return R;
   }
   else{
     cout<<"ASSIGNMENT TYPE MISMATCH"<<endl;
@@ -383,7 +413,12 @@ Value* Identifier::codegen(){
   AllocaInst* A;
   int location = ident_info.pos;
   if(location < 0){
-    A = global_st["g" + to_string(-location)];
+    cout<<location<<"GLOVAL"<<endl;
+    GlobalVariable* A = global_st[ getVarName(this, "g")];
+    type_info.type = ident_info.stype;
+    type_info.ptr_depth = 0;
+    type_info.is_ref = true;
+    return llvm_builder->CreateLoad(A->getType(), A, name);
   }
   else{
     A = llvm_st["l" + to_string(location)];
