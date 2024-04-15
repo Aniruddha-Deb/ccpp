@@ -50,13 +50,14 @@ void SymbolTable::reset_symb_identifier() {
     curr_symb_identifier = 0;
 }
 
-void SymbolTable::add_symbol(string x, SymbolType type){
+void SymbolTable::add_symbol(string x, SymbolInfo info){
   // cout<<"ADD:"<<x<<"->"<<endl;
   if(check_scope(x)){
     cout<<"PANIC ADD_SYMBOL\n";
   }
   else{
-    scopestack.top()[x] = {curr_symb_identifier, type};
+    info.idx = curr_symb_identifier;
+    scopestack.top()[x] = info;
     curr_symb_identifier++;
   }
 }

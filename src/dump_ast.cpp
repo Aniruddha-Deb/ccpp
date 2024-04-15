@@ -39,7 +39,7 @@ string listify(std::vector<T*>& nodes, string prefix) {
 
 string Identifier::dump_ast(string prefix) {
   cdebug << "Identifier::dump_ast: " << endl;
-  return name + "[" + to_string(ident_info.pos) + "]";
+  return name + "[" + to_string(ident_info.idx) + "]";
 }
 
 string TernaryExpression::dump_ast(string prefix) {

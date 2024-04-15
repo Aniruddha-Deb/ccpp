@@ -59,8 +59,8 @@ SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
 
 
 std::string getVarName(ast::Identifier *ident, std::string prefix){
-  int location = ident->ident_info.pos;
-  return prefix + to_string(abs(location));
+  int idx = ident->ident_info.idx;
+  return prefix + to_string(abs(idx));
 }
 
 
@@ -345,7 +345,9 @@ Value* UnaryExpression::codegen(){
       type_info.ptr_depth = expr->type_info.ptr_depth ; // check if non negative??
       // decrement ptr depth
       type_info.is_ref = true;
-      return llvm_builder->CreateLoad((llvm::cast<llvm::PointerType>(R->getType()))->getElementType(), R, "dereftemp");
+      // removed the getElementType, segfaults now though
+      // also changed loc to idx (more descriptive)
+      return llvm_builder->CreateLoad((llvm::cast<llvm::PointerType>(R->getType())), R, "dereftemp");
     case OP_AND:
       R = expr->get_address();
       type_info.type = expr->type_info.type;
@@ -478,9 +480,9 @@ llvm::Function *Function::codegen() {
 Value* Identifier::codegen(){
   // assuming undeclared variables handled in scopify
   AllocaInst* A;
-  int location = ident_info.pos;
-  if(location < 0){
-    cout<<location<<"GLOVAL"<<endl;
+  int idx = ident_info.idx;
+  if(idx < 0){
+    cout<<idx<<"GLOVAL"<<endl;
     GlobalVariable* A = global_st[ getVarName(this, "g")];
     type_info.type = ident_info.stype;
     type_info.ptr_depth = 0;
@@ -488,7 +490,7 @@ Value* Identifier::codegen(){
     return llvm_builder->CreateLoad(A->getType(), A, name);
   }
   else{
-    A = llvm_st["l" + to_string(location)];
+    A = llvm_st["l" + to_string(idx)];
   }
 
 

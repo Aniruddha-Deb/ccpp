@@ -144,12 +144,7 @@ void Declaration::scopify() {
       cout << "PANIC REDECLARATION\n";
     }
     else {
-      if (decl->ptr_depth > 0) {
-        table->add_symbol(decl->ident->name, PTR);
-      }
-      else {
-        table->add_symbol(decl->ident->name, typespecs2st(decl_specs->type_specs));
-      }
+      table->add_symbol(decl->ident->name, {-1, decl->ptr_depth, typespecs2st(decl_specs->type_specs)});
       decl->ident->scopify();
     }
   }
@@ -173,12 +168,7 @@ void PureDeclaration::scopify() {
     cout << "PANIC REDECLARATION\n";
   }
   else {
-    if (ptr_depth > 0) {
-      table->add_symbol(ident->name, PTR);
-    }
-    else {
-      table->add_symbol(ident->name, typespecs2st(decl_specs->type_specs));
-    }
+    table->add_symbol(ident->name, {-1, ptr_depth, typespecs2st(decl_specs->type_specs)});
     ident->scopify();
   }
 }
@@ -197,7 +187,7 @@ void Function::scopify() {
   if (table->check_scope(name)) {
     cout << "PANIC REDECLARATION\n";
   } else {
-    table->add_symbol(name, FUNC);
+    table->add_symbol(name, {-1, 0, FUNC});
     table->reset_symb_identifier();
     table->enter_scope();
     if (params) params->scopify();

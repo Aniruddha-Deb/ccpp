@@ -25,7 +25,8 @@ enum SymbolType {
 };
 
 struct SymbolInfo {
-    int pos;
+    int idx;
+    int ptr_depth;
     SymbolType stype;
 };
 
@@ -38,7 +39,7 @@ public:
     SymbolTable();
     void enter_scope();
     void exit_scope();
-    void add_symbol(string x, SymbolType type);
+    void add_symbol(string x, SymbolInfo info);
     void reset_symb_identifier();
     SymbolInfo find_symbol(string x);
     bool check_scope(string x);
