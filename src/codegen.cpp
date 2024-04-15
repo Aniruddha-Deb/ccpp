@@ -404,9 +404,6 @@ Value* BlockStatement::codegen(){
   Value* v;
   for (auto stmt = begin(); stmt != end(); ++stmt) {
         v = (*stmt)->codegen();
-        // if(!v){
-        //   return nullptr;
-        // }
     }
   return v;
 }
@@ -509,5 +506,63 @@ Value* Identifier::codegen(){
   type_info.is_ref = true;
   return llvm_builder->CreateLoad(A->getAllocatedType(), A, name);
 } 
+
+
+
+// control flow
+
+Value *IfStatement::codegen() {
+  Value *CondV = cond->codegen();
+  if (!CondV || cond->type_info.st.stype != I1)
+    return nullptr;
+
+
+  llvm::Function *func = llvm_builder->GetInsertBlock()->getParent();
+
+  // Create blocks for the then and else cases.  Insert the 'then' block at the
+  // end of the function.
+  BasicBlock *ThenBB = BasicBlock::Create(*llvm_ctx, "then", func);
+  BasicBlock *ElseBB = BasicBlock::Create(*llvm_ctx, "else");
+  BasicBlock *MergeBB = BasicBlock::Create(*llvm_ctx, "ifcont");
+
+  llvm_builder->CreateCondBr(CondV, ThenBB, ElseBB);
+
+  // Emit then value.
+  llvm_builder->SetInsertPoint(ThenBB);
+
+  Value *ThenV = true_branch->codegen();
+  if (!ThenV)
+    return nullptr;
+
+  llvm_builder->CreateBr(MergeBB);
+  // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
+  ThenBB = llvm_builder->GetInsertBlock();
+
+  // Emit else block.
+  func->getBasicBlockList().push_back(ElseBB);
+  llvm_builder->SetInsertPoint(ElseBB);
+  Value *ElseV = nullptr;
+  if(false_branch){
+    ElseV = false_branch->codegen();
+    if (!ElseV)
+      return nullptr;
+  }
+
+  
+
+  llvm_builder->CreateBr(MergeBB);
+  // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
+  ElseBB = llvm_builder->GetInsertBlock();
+
+  // Emit merge block.
+  func->getBasicBlockList().push_back(MergeBB);
+  llvm_builder->SetInsertPoint(MergeBB);
+  // PHINode *PN = llvm_builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "iftmp");
+
+  // PN->addIncoming(ThenV, ThenBB);
+  // PN->addIncoming(ElseV, ElseBB);               // PHINODE?
+  return nullptr;
+}
+
 
 }
