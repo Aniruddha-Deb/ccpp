@@ -330,7 +330,7 @@ struct IfStatement : Statement {
               Statement *_false_branch);
   string dump_ast(string prefix);
   void scopify();
-  // llvm::Value* codegen();
+  llvm::Value* codegen() override;
   ~IfStatement();
 };
 
@@ -354,7 +354,7 @@ struct WhileStatement : Statement {
   WhileStatement(Expression *_cond, Statement *_stmt);
   string dump_ast(string prefix);
   void scopify();
-  // llvm::Value* codegen();
+  llvm::Value* codegen() override;
   ~WhileStatement();
 };
 

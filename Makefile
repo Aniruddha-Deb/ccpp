@@ -5,7 +5,7 @@ INCLUDE=-I/opt/homebrew/opt/llvm@14/include/
 BISON=/opt/homebrew/opt/bison/bin/bison
 OS := $(shell uname)
 ifneq ($(OS),Darwin)
-	CC=gcc
+	CC=g++
 	LDFLAGS = -lm -ll -lfl -L/usr/lib/llvm-14/lib -lLLVM-14
 	INCLUDE=-I/usr/lib/llvm-14/include
 	BISON=bison

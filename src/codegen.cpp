@@ -421,7 +421,7 @@ llvm::Value* FunctionInvocationExpression::codegen(){
 
   type_info.is_ref = false;
   type_info.st = ident->ident_info;          
-  cdebug<<"Function invocation with type "<<fn->type_info.st.stype<<endl;
+  // cdebug<<"Function invocation with type "<<fn->type_info.st.stype<<endl;
   if (func->arg_size() != num_params){
     cout<<"num args don't match"<<endl;
     return nullptr;
@@ -475,8 +475,9 @@ llvm::Function *Function::codegen() {
     llvm_st[getVarName((*(params->params))[i]->ident, "l")] = Alloca;
     i++;
   }
-
-  if (Value *ret_val = stmts->codegen()) {
+  
+  Value *ret_val = stmts->codegen();
+  if (/* Value *ret_val = stmts->codegen() */true) {           // if and while return nullptr for now. change during error handling maybe
 
     verifyFunction(*func);
     return func;
@@ -531,8 +532,6 @@ Value *IfStatement::codegen() {
   llvm_builder->SetInsertPoint(ThenBB);
 
   Value *ThenV = true_branch->codegen();
-  if (!ThenV)
-    return nullptr;
 
   llvm_builder->CreateBr(MergeBB);
   // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
@@ -543,9 +542,11 @@ Value *IfStatement::codegen() {
   llvm_builder->SetInsertPoint(ElseBB);
   Value *ElseV = nullptr;
   if(false_branch){
+    cdebug << "non empty else" << endl;
     ElseV = false_branch->codegen();
-    if (!ElseV)
-      return nullptr;
+  }
+  else{
+    cdebug << "empty else" << endl;
   }
 
   
@@ -561,8 +562,38 @@ Value *IfStatement::codegen() {
 
   // PN->addIncoming(ThenV, ThenBB);
   // PN->addIncoming(ElseV, ElseBB);               // PHINODE?
+  return nullptr;                                                   // might be a problem during error handling
+}
+
+
+Value* WhileStatement::codegen(){
+  llvm::Function *func = llvm_builder->GetInsertBlock()->getParent();
+  // BasicBlock *Cond = llvm_builder->GetInsertBlock();
+  BasicBlock *CondBB = BasicBlock::Create(*llvm_ctx, "loop_cond", func);
+  BasicBlock *LoopBB = BasicBlock::Create(*llvm_ctx, "loop_body", func);
+  BasicBlock *AfterBB = BasicBlock::Create(*llvm_ctx, "afterloop", func);
+
+  // Insert an explicit fall through from the current block to the LoopBB.
+  llvm_builder->CreateBr(CondBB);
+
+  // Start insertion in LoopBB.
+  llvm_builder->SetInsertPoint(CondBB);
+
+  // Compute the end condition.
+  Value *Cond = cond->codegen();
+  llvm_builder->CreateCondBr(Cond, LoopBB, AfterBB);
+
+  llvm_builder->SetInsertPoint(LoopBB);
+
+  stmt->codegen();
+  llvm_builder->CreateBr(CondBB);
+
+  llvm_builder->SetInsertPoint(AfterBB);
+
+ 
   return nullptr;
 }
+
 
 
 }
