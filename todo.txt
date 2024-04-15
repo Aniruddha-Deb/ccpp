@@ -1,10 +1,21 @@
-- [ ] scopify refix, maintain symbol table
-- [ ] use symtab in codegen
+- [X] scopify refix, maintain symbol table
+- [X] use symtab in codegen
 - [ ] llvm ir gen code cleanup
+- [ ] Better error handling
+- [ ] Boolean support
 - [ ] features left to implement
-  - [ ] complete expressions
-  - [ ] type checking for expressions
-  - [ ] declarations
-  - [ ] branches
-  - [ ] loops
+  - [ ] expressions
+    - [X] Arithmetic
+    - [X] Assignment
+    - [ ] op assignment
+    - [ ] binary expressions 
+    - [ ] relational expressions (bool type!)
+    - [ ] Boolean expressions
+  - [X] pointers
+  - [ ] type checking for expressions (lil bit)
+  - [X] declarations
+  - [ ] branches (if)
+  - [ ] loops (while)
 - [ ] parsing literals (int/float)
+- [ ] ** string literals
+- [ ] global variables
