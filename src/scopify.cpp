@@ -187,7 +187,9 @@ void Function::scopify() {
   if (table->check_scope(name)) {
     cout << "PANIC REDECLARATION\n";
   } else {
-    table->add_symbol(name, {-1, 0, FUNC});
+    table->add_symbol(name, {-1, func_decl->ptr_depth, typespecs2st(func_decl->decl_specs->type_specs)});
+    cdebug<<"Function decl assigned type "<<typespecs2st(func_decl->decl_specs->type_specs)<<" ptr depth "<<func_decl->ptr_depth<<endl;
+    // table->add_symbol(name, {-1, 0, FUNC});
     table->reset_symb_identifier();
     table->enter_scope();
     if (params) params->scopify();

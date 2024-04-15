@@ -136,8 +136,7 @@ struct Node {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ExprTypeInfo{
-  SymbolType type;
-  int ptr_depth;
+  SymbolInfo st;
   bool is_ref;
 };
 
@@ -145,7 +144,7 @@ struct Expression : Node {
   virtual ~Expression() {}
   ExprTypeInfo type_info;
   virtual llvm::Value* codegen();                      // codegen when rvalue
-  virtual llvm::Value* assign(Expression* R);         // codegen when lvalue
+  // virtual llvm::Value* assign(Expression* R);         // codegen when lvalue
   virtual llvm::Value* get_address();                                // use this to replace assign               
 };
 
@@ -156,7 +155,7 @@ struct Identifier : Expression {
   Identifier(string _name);
   string dump_ast(string prefix);
   llvm::Value* codegen() override;
-  llvm::Value* assign(Expression* R) override;
+  // llvm::Value* assign(Expression* R) override;
   llvm::Value* get_address() override;
   void scopify();
 };

@@ -58,6 +58,9 @@ SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
 
 
 
+
+
+
 std::string getVarName(ast::Identifier *ident, std::string prefix){
   int idx = ident->ident_info.idx;
   return prefix + to_string(abs(idx));
@@ -94,6 +97,41 @@ llvm::Type* getType(DeclarationSpecifiers* decl_specs, int ptr_depth){
   while(ptr_depth>0){
     t = llvm::PointerType::get(t, 0);
     ptr_depth--;
+  }
+  return t;
+}
+
+
+
+llvm::Type* getTypeNew(SymbolInfo symbol_info){
+  SymbolType ts= symbol_info.stype;
+  llvm::Type* t;
+  switch (ts)
+  {
+  case FP32:
+    t = Type::getFloatTy(*llvm_ctx);
+    break;
+  case FP64:
+    t = Type::getDoubleTy(*llvm_ctx);
+    break;
+  case I32:
+    t = Type::getInt32Ty(*llvm_ctx);
+    break;
+  case I64:
+    t = Type::getInt64Ty(*llvm_ctx);
+    break;
+  case U8:
+    t = Type::getInt8Ty(*llvm_ctx);
+    break;
+  
+  
+  default:
+    break;
+  }
+
+  while(symbol_info.ptr_depth>0){
+    t = llvm::PointerType::get(t, 0);
+    symbol_info.ptr_depth--;
   }
   return t;
 }
@@ -185,27 +223,27 @@ Value* ExpressionStatement::codegen(){
 Value* Literal::codegen() {
   int v;
   float f;
-  type_info.is_ref = 0;
-  type_info.ptr_depth = 0;
+  type_info.is_ref = false;
+  type_info.st.ptr_depth = 0;
   switch(ltype) {
         case LT_INT_LIKE:
             v = intLiteralToInt(value);
-            type_info.type = I32;
+            type_info.st.stype = I32;
             return ConstantInt::get(*llvm_ctx, APInt(32, v));
             break;
             // break;
         case LT_INT64:
             v = intLiteralToInt(value);
-            type_info.type = I64;
+            type_info.st.stype = I64;
             return ConstantInt::get(*llvm_ctx, APInt(64, v));
         case LT_FLOAT:
-            type_info.type = FP32;
+            type_info.st.stype = FP32;
             return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
         case LT_DOUBLE:
-            type_info.type = FP64;
+            type_info.st.stype = FP64;
             return ConstantFP::get(llvm::Type::getDoubleTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
           case LT_FLOAT_LIKE:
-            type_info.type = FP32;
+            type_info.st.stype = FP32;
             return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
         default:
             cout<<"invalid literal"<<endl;
@@ -213,33 +251,10 @@ Value* Literal::codegen() {
   }
 }
 
-Value* Expression::assign(Expression* rhs){
-  cout<<"ASSIGNMENT TO NON REFERENCE TYPE"<<endl;
-  return nullptr;
-}
 
-// write assign for unary expressions
-
-Value* Identifier::assign(Expression* rhs){
-  Value* R = rhs->codegen();
-  type_info.type = ident_info.stype;
-  type_info.ptr_depth = 0;   // REMOVE LATER, should resolve this during scopify
-  type_info.is_ref = true;
-
-  if((rhs->type_info.ptr_depth == type_info.ptr_depth) && (rhs->type_info.type == type_info.type)){
-    llvm_builder->CreateStore(R, llvm_st[getVarName(this, "l")]);   // should we return this or value* of rhs? for chain assignments
-    return R;
-  }
-  else{
-    cout<<"ASSIGNMENT TYPE MISMATCH"<<endl;
-    return nullptr;
-  }
-
-}
 
 Value* Identifier::get_address(){
-  type_info.type = ident_info.stype;
-  type_info.ptr_depth = 0;   // REMOVE LATER, should resolve this during scopify
+  type_info.st = ident_info;
   type_info.is_ref = true;
 
   return llvm_st[getVarName(this, "l")];
@@ -254,13 +269,10 @@ Value *BinaryExpression::codegen() {
     // cdebug<<"calling codegen"<<endl;
     Value* R = rhs->codegen();
 
-    type_info.type = rhs->type_info.type;
+    type_info.st = rhs->type_info.st;
     type_info.is_ref = false;                         // should this be rhs->is_ref?? Nope
-    type_info.ptr_depth = rhs->type_info.ptr_depth;
     // cout<<lhs->type_info.type<<" "<<rhs->type_info.type<<endl<<lhs->type_info.ptr_depth<<" "<<rhs->type_info.ptr_depth<<endl<<lhs->type_info.is_ref<<endl;
-    if(true){
-
-    // (lhs->type_info.type == rhs->type_info.type) && (lhs->type_info.ptr_depth == rhs->type_info.ptr_depth) && (lhs->type_info.is_ref)
+    if((lhs->type_info.st.stype == rhs->type_info.st.stype) && (lhs->type_info.st.ptr_depth == rhs->type_info.st.ptr_depth) && (lhs->type_info.is_ref)){
       llvm_builder->CreateStore(R, A, "assigntemp");
       return R;
     }
@@ -276,60 +288,60 @@ Value *BinaryExpression::codegen() {
   if (!L || !R)
     return nullptr;
 
-  if(lhs->type_info.type != rhs->type_info.type || lhs->type_info.ptr_depth != rhs->type_info.ptr_depth || lhs->type_info.ptr_depth != 0){
+  if(lhs->type_info.st.stype != rhs->type_info.st.stype || lhs->type_info.st.ptr_depth != rhs->type_info.st.ptr_depth || lhs->type_info.st.ptr_depth != 0){
     cout<<"Type mismatch"<<endl;
     return nullptr;
   }
 
   type_info.is_ref = false;
-  type_info.ptr_depth = 0;
-
+  type_info.st.ptr_depth = 0;    // for now
   switch (op) {
     case OP_ADD:
-      type_info.type = lhs->type_info.type;
-      return handleAdd(L, R, lhs->type_info.type);
+      type_info.st.stype = lhs->type_info.st.stype;
+      
+      return handleAdd(L, R, lhs->type_info.st.stype);
     case OP_SUB:
-      type_info.type = lhs->type_info.type;
-      return handleSub(L, R, lhs->type_info.type);
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleSub(L, R, lhs->type_info.st.stype);
     case OP_MUL:
-      type_info.type = lhs->type_info.type;
-      return handleMul(L, R, lhs->type_info.type);
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleMul(L, R, lhs->type_info.st.stype);
     case OP_DIV:
-      type_info.type = lhs->type_info.type;
-      return handleDiv(L, R, lhs->type_info.type);
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleDiv(L, R, lhs->type_info.st.stype);
     case OP_GE:
-      type_info.type = I1;
-      return handleGTE(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleGTE(L, R, lhs->type_info.st.stype);
     case OP_GT:
-      type_info.type = I1;
-      return handleGT(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleGT(L, R, lhs->type_info.st.stype);
     case OP_LE:
-      type_info.type = I1;
-      return handleLTE(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleLTE(L, R, lhs->type_info.st.stype);
     case OP_LT:
-      type_info.type = I1;
-      return handleLT(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleLT(L, R, lhs->type_info.st.stype);
     case OP_EQ:
-      type_info.type = I1;
-      return handleEQ(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleEQ(L, R, lhs->type_info.st.stype);
     case OP_NE:
-      type_info.type = I1;
-      return handleNE(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleNE(L, R, lhs->type_info.st.stype);
     case OP_BOOL_AND:
-      type_info.type = I1;
-      return handleBAnd(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleBAnd(L, R, lhs->type_info.st.stype);
     case OP_BOOL_OR:
-      type_info.type = I1;
-      return handleBOr(L, R, lhs->type_info.type);
+      type_info.st.stype = I1;
+      return handleBOr(L, R, lhs->type_info.st.stype);
     case OP_AND:
-      type_info.type = lhs->type_info.type;
-      return handleAnd(L, R, lhs->type_info.type);
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleAnd(L, R, lhs->type_info.st.stype);
     case OP_OR:
-      type_info.type = lhs->type_info.type;
-      return handleOr(L, R, lhs->type_info.type);
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleOr(L, R, lhs->type_info.st.stype);
     case OP_XOR:
-      type_info.type = lhs->type_info.type;
-      return handleXor(L, R, lhs->type_info.type);
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleXor(L, R, lhs->type_info.st.stype);
     default:
       cout<<"OP NOT FOUND"<<endl;
   }
@@ -341,18 +353,17 @@ Value* UnaryExpression::codegen(){
     case OP_DEREF:
       // cdebug<<"HAW"<<endl;
       R = expr->codegen();
-      type_info.type = expr->type_info.type;
-      type_info.ptr_depth = expr->type_info.ptr_depth ; // check if non negative??
-      // decrement ptr depth
+      type_info= expr->type_info;
+      type_info.st.ptr_depth--;  // check if less than zero
       type_info.is_ref = true;
       // removed the getElementType, segfaults now though
-      // also changed loc to idx (more descriptive)
-      return llvm_builder->CreateLoad((llvm::cast<llvm::PointerType>(R->getType())), R, "dereftemp");
+      // also changed loc to idx (more descriptive) 
+      // llvm::cast<llvm::PointerType>(R->getType()))->getElementType()
+      return llvm_builder->CreateLoad(getTypeNew(type_info.st), R, "dereftemp");
     case OP_AND:
       R = expr->get_address();
-      type_info.type = expr->type_info.type;
-      type_info.ptr_depth = expr->type_info.ptr_depth ; // check if non negative??
-      // increment ptr depth
+      type_info= expr->type_info;
+      type_info.st.ptr_depth++;  
       type_info.is_ref = false;
       return R;
     default:
@@ -372,8 +383,8 @@ Value* UnaryExpression::get_address(){
   switch (op){
     case OP_DEREF:
       R = expr->codegen();
-      type_info.type = expr->type_info.type;
-      type_info.ptr_depth = expr->type_info.ptr_depth; // change after ptr_depth is fixed
+      type_info= expr->type_info;
+      type_info.st.ptr_depth--;  // check if less than zero
       type_info.is_ref = true;
       return R;
     default:
@@ -408,9 +419,12 @@ llvm::Value* FunctionInvocationExpression::codegen(){
   }
 
  // Type should be assigned during scopify
-  Identifier* ident = (Identifier*) fn;
+  Identifier* ident = (Identifier*) fn;               // is it fine to call codegen func here? nope
   llvm::Function* func = llvm_mod->getFunction(ident->name);
 
+  type_info.is_ref = false;
+  type_info.st = ident->ident_info;          
+  cdebug<<"Function invocation with type "<<fn->type_info.st.stype<<endl;
   if (func->arg_size() != num_params){
     cout<<"num args don't match"<<endl;
     return nullptr;
@@ -484,8 +498,7 @@ Value* Identifier::codegen(){
   if(idx < 0){
     cout<<idx<<"GLOVAL"<<endl;
     GlobalVariable* A = global_st[ getVarName(this, "g")];
-    type_info.type = ident_info.stype;
-    type_info.ptr_depth = 0;
+    type_info.st= ident_info;
     type_info.is_ref = true;
     return llvm_builder->CreateLoad(A->getType(), A, name);
   }
@@ -495,8 +508,7 @@ Value* Identifier::codegen(){
 
 
  
-  type_info.type = ident_info.stype;
-  type_info.ptr_depth = 0;   // REMOVE LATER
+  type_info.st = ident_info;
   type_info.is_ref = true;
   return llvm_builder->CreateLoad(A->getAllocatedType(), A, name);
 } 

@@ -8,7 +8,8 @@ int ptrtest(){
     int * i;
     int b = 0;
     i = &(*(&b));
-    (*i) = b + b;
+    (*i) = (*i) + b;
+    (*i) = foo(*i);
     return 0;
 }
 
