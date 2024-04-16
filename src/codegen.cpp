@@ -8,9 +8,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
-#include "codegen.hpp"
 #include "symtab.hpp"
-#include "expressiongen.hpp"
 #include <map>
 #include "ast.hpp"
 #include "debug.hpp"
@@ -32,17 +30,131 @@ double floatLiteralToFloat(string &s){
 
 using namespace llvm;
 
-
 namespace ast {
 
- std::unique_ptr<llvm::LLVMContext> llvm_ctx;
- std::unique_ptr<llvm::Module> llvm_mod;
- std::unique_ptr<llvm::IRBuilder<>> llvm_builder;
- std::map<std::string, AllocaInst*> llvm_st;
- std::map<std::string, GlobalVariable*> global_st;
- std::map<std::string, llvm::Function*> func_st;
+static std::unique_ptr<llvm::LLVMContext> llvm_ctx;
+static std::unique_ptr<llvm::Module> llvm_mod;
+static std::unique_ptr<llvm::IRBuilder<>> llvm_builder;
+static std::map<std::string, AllocaInst*> llvm_st;
+static std::map<std::string, GlobalVariable*> global_st;
+static std::map<std::string, llvm::Function*> func_st;
 
 
+bool is_signed_int_type(SymbolType ty) {
+  return ty == I8 || ty == I16 || ty == I32 || ty == I64;
+}
+
+bool is_bool_type(SymbolType ty) {
+  return ty == I1;
+}
+
+bool is_unsigned_int_type(SymbolType ty) {
+  return ty == U8 || ty == U16 || ty == U32 || ty == U64;
+}
+
+bool is_int_type(SymbolType ty) {
+  return is_signed_int_type(ty) || is_unsigned_int_type(ty);
+}
+
+bool is_fp_type(SymbolType ty) {
+  return ty == FP32 || ty == FP64;
+}
+
+Value* handleAdd(Value* L, Value* R, SymbolType ty){
+  if (is_int_type(ty)) return llvm_builder->CreateAdd(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFAdd(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleSub(Value* L, Value* R, SymbolType ty){
+  if (is_int_type(ty)) return llvm_builder->CreateSub(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFSub(L, R, "temp");
+  else return nullptr;
+}
+
+
+Value* handleMul(Value* L, Value* R, SymbolType ty) {
+  if (is_int_type(ty)) return llvm_builder->CreateMul(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFMul(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleDiv(Value* L, Value* R, SymbolType ty) {
+  if (is_signed_int_type(ty)) return llvm_builder->CreateSDiv(L, R, "temp");
+  else if (is_unsigned_int_type(ty)) return llvm_builder->CreateUDiv(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFDiv(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleGE(Value* L, Value* R, SymbolType ty) {
+  if (is_signed_int_type(ty)) return llvm_builder->CreateICmpSGE(L, R, "temp");
+  else if (is_unsigned_int_type(ty)) return llvm_builder->CreateICmpUGE(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFCmpOGE(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleGT(Value* L, Value* R, SymbolType ty) {
+  if (is_signed_int_type(ty)) return llvm_builder->CreateICmpSGT(L, R, "temp");
+  else if (is_unsigned_int_type(ty)) return llvm_builder->CreateICmpUGT(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFCmpOGT(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleLE(Value* L, Value* R, SymbolType ty) {
+  if (is_signed_int_type(ty)) return llvm_builder->CreateICmpSLE(L, R, "temp");
+  else if (is_unsigned_int_type(ty)) return llvm_builder->CreateICmpULE(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFCmpOLE(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleLT(Value* L, Value* R, SymbolType ty) {
+  if (is_signed_int_type(ty)) return llvm_builder->CreateICmpSLT(L, R, "temp");
+  else if (is_unsigned_int_type(ty)) return llvm_builder->CreateICmpULT(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFCmpOLT(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleEQ(Value* L, Value* R, SymbolType ty) {
+  if (is_int_type(ty)) return llvm_builder->CreateICmpEQ(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFCmpOEQ(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleNE(Value* L, Value* R, SymbolType ty) {
+  if (is_int_type(ty)) return llvm_builder->CreateICmpNE(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFCmpONE(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleBAnd(Value* L, Value* R, SymbolType ty) {
+  if (is_bool_type(ty)) return llvm_builder->CreateAnd(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleBOr(Value* L, Value* R, SymbolType ty) {
+  if (is_bool_type(ty)) return llvm_builder->CreateOr(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleBNot(Value* L, SymbolType ty){
+  if (is_bool_type(ty)) return llvm_builder->CreateNot(L);
+  else return nullptr;
+}
+
+Value* handleAnd(Value* L, Value* R, SymbolType ty) {
+  if (is_int_type(ty)) return llvm_builder->CreateAnd(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleOr(Value* L, Value* R, SymbolType ty) {
+  if (is_int_type(ty)) return llvm_builder->CreateOr(L, R, "temp");
+  else return nullptr;
+}
+
+Value* handleXor(Value* L, Value* R, SymbolType ty) {
+  if (is_int_type(ty)) return llvm_builder->CreateXor(L, R, "temp");
+  else return nullptr;
+}
 
 SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
   if (type_specs.find(TS_FLOAT) != type_specs.end()) return FP32;
@@ -61,17 +173,10 @@ SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
   return I32;
 }
 
-
-
-
-
-
 std::string getVarName(ast::Identifier *ident, std::string prefix){
   int idx = ident->ident_info.idx;
   return prefix + to_string(abs(idx));
 }
-
-
 
 llvm::Type* getType(DeclarationSpecifiers* decl_specs, int ptr_depth){
   SymbolType ts= typespecs2stg(decl_specs->type_specs);
@@ -376,13 +481,13 @@ Value *BinaryExpression::codegen() {
       return handleDiv(L, R, lhs->type_info.st.stype);
     case OP_GE:
       type_info.st.stype = I1;
-      return handleGTE(L, R, lhs->type_info.st.stype);
+      return handleGE(L, R, lhs->type_info.st.stype);
     case OP_GT:
       type_info.st.stype = I1;
       return handleGT(L, R, lhs->type_info.st.stype);
     case OP_LE:
       type_info.st.stype = I1;
-      return handleLTE(L, R, lhs->type_info.st.stype);
+      return handleLE(L, R, lhs->type_info.st.stype);
     case OP_LT:
       type_info.st.stype = I1;
       return handleLT(L, R, lhs->type_info.st.stype);
@@ -409,7 +514,9 @@ Value *BinaryExpression::codegen() {
       return handleXor(L, R, lhs->type_info.st.stype);
     default:
       cout<<"OP NOT FOUND"<<endl;
+      return nullptr;
   }
+  // TODO code calling this should also do error checking!
 }
 
 Value* UnaryExpression::codegen(){

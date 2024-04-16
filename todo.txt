@@ -3,6 +3,7 @@
 - [ ] llvm ir gen code cleanup
 - [ ] Better error handling
 - [ ] Boolean support
+- [ ] Debug *i = 10
 - [ ] features left to implement
   - [ ] expressions
     - [X] Arithmetic
