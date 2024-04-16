@@ -21,6 +21,7 @@ enum SymbolType {
     U64,
     PTR,
     FUNC,
+    VD,
     UNK
 };
 

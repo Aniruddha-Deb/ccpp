@@ -178,6 +178,20 @@ Value* handleXor(Value* L, Value* R, SymbolType ty) {
   else return nullptr;
 }
 
+Value* handleLshift(Value* L, Value* R, SymbolType ty){
+  if (is_int_type(ty)) return llvm_builder->CreateShl(L, R, "lshifttemp");
+  else return nullptr;
+}
+
+
+Value* handleRshift(Value* L, Value* R, SymbolType ty) {
+  if (is_signed_int_type(ty)) return llvm_builder->CreateAShr(L, R, "srshifttemp");
+  else if (is_unsigned_int_type(ty)) return llvm_builder->CreateLShr(L, R, "urshifttemp");
+  else return nullptr;
+}
+
+
+
 SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
   if (type_specs.find(TS_FLOAT) != type_specs.end()) return FP32;
   if (type_specs.find(TS_DOUBLE) != type_specs.end()) return FP64;
@@ -193,6 +207,7 @@ SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
   }
   if (type_specs.find(TS_SHORT) != type_specs.end()) return I16;
   if (type_specs.find(TS_LONG) != type_specs.end()) return I64;
+  if (type_specs.find(TS_VOID) != type_specs.end()) return VD;
   return I32;
 }
 
@@ -215,6 +230,7 @@ llvm::Type* getType(SymbolType ts, int ptr_depth){
     case U32:  t = Type::getInt32Ty(*llvm_ctx); break;
     case I64:  
     case U64:  t = Type::getInt64Ty(*llvm_ctx); break;
+    case VD: t = Type::getVoidTy(*llvm_ctx); break;
     default: break;
   }
 
@@ -368,11 +384,8 @@ Value* Literal::codegen() {
                 ".str"  // Name of the string literal
             );
 
-            
-            // This is the array offset into RaviGCObject*
             values.push_back(
               llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), zero));
-            // This is the field offset
             values.push_back(
             llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), one));
 
@@ -431,10 +444,10 @@ Value *BinaryExpression::codegen() {
     }
   }
   Value *L = lhs->codegen();
-  // @jai why tf is this a float. Where are we setting type_info for non-literals?
-  cout << stype2str(lhs->type_info.st.stype) << endl;
+  // @jai why tf is this a float. Where are we setting type_info for non-literals? Identifier::codegen(). we werent calling scopify() on initexpressions :(
+  // cout << stype2str(lhs->type_info.st.stype) << endl;
   Value *R = rhs->codegen();
-  cout << stype2str(rhs->type_info.st.stype) << endl;
+  // cout << stype2str(rhs->type_info.st.stype) << endl;
   // TODO type check. error if types don't match
 
   if (!L || !R)
@@ -460,6 +473,12 @@ Value *BinaryExpression::codegen() {
     case OP_DIV:
       type_info.st.stype = lhs->type_info.st.stype;
       return handleDiv(L, R, lhs->type_info.st.stype);
+    case OP_LSHIFT:
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleLshift(L, R, lhs->type_info.st.stype);
+    case OP_RSHIFT:
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleRshift(L, R, lhs->type_info.st.stype);
     case OP_GE:
       type_info.st.stype = I1;
       return handleGE(L, R, lhs->type_info.st.stype);
