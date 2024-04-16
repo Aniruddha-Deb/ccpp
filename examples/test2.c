@@ -3,7 +3,10 @@ int factorial(int n)
 	if (n <= 0)
 		return 1;
 	else return n*factorial(n-1);
+	return -1;
 }
+
+int printf(char const *format, ...);
 
 int fibonacci(int a, int b, int n)
 {
@@ -20,7 +23,11 @@ int fibonacci(int a, int b, int n)
 	return b;
 }
 
+int p;
+
 int main()
 {
-  fibonacci(factorial(1), factorial(2), factorial(5));
+  p =3;
+  printf("%d", fibonacci(factorial(1), factorial(2), factorial(p)));
+  return 0;
 }

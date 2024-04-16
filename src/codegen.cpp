@@ -177,9 +177,14 @@ llvm::Value* Declaration::globalgen(){
   for(auto init_decl: *decl_list){
     A = new llvm::GlobalVariable(*llvm_mod, getType(decl_specs, init_decl->ptr_depth), false, llvm::GlobalValue::CommonLinkage, 0, getVarName(init_decl->ident, "g"));
     // A->setInitializer(0);
-    if(init_decl->init_expr){
-      Value* init_val = init_decl->init_expr->codegen();            // can't do this, evaluate const expression and init global variables with this value
+
+    if(init_decl->init_expr){                                        // change
+      Value* init_val = init_decl->init_expr->codegen();             // this to const exp evaluation
       llvm_builder->CreateStore(init_val, A);
+    }
+    else{
+      // A->setInitializer(0);                                  // idk ig we have to init global variables to make them work
+      (0);
     }
     // cout<<init_decl->ident->ident_info.idx<<" g location"<<endl;
     global_st[getVarName(init_decl->ident, "g") ] = A;
@@ -266,7 +271,7 @@ Value* Literal::codegen() {
         case LT_STRING:
             stringType = llvm::ArrayType::get(
                 llvm_builder->getInt8Ty(),
-                stringLiteraltoString(value).length()
+                stringLiteraltoString(value).length() + 1
             );
 
             stringLiteral  = llvm::ConstantDataArray::getString(*llvm_ctx, stringLiteraltoString(value), true);
