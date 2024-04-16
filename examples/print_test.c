@@ -1,4 +1,6 @@
-#include <stdio.h>
+// #include <stdio.h>
+
+void printf(char *c, ...);
 
 int main() {
 

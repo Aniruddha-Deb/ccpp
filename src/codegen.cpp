@@ -576,8 +576,11 @@ Value* BlockStatement::codegen(){
   Value* v;
   for (auto stmt = begin(); stmt != end(); ++stmt) {
         v = (*stmt)->codegen();
+        if(dynamic_cast<ReturnStatement*> (*stmt)){
+          return nullptr;                                  // if there is a return statement return nullptr else return v. this might create problems when we do error handling.
+        }
     }
-  return v;
+  return (Value*) 1;
 }
 
 llvm::Value* FunctionInvocationExpression::codegen(){
@@ -605,6 +608,9 @@ llvm::Value* FunctionInvocationExpression::codegen(){
     argsV.push_back((*params)[i]->codegen());                   // type check arg types
   }
   
+  if(func->getFunctionType()->getReturnType()->isVoidTy()){
+    return llvm_builder->CreateCall(func, argsV);
+  }
   return llvm_builder->CreateCall(func, argsV, "calltmp");
 }
 
@@ -666,6 +672,17 @@ llvm::Function *Function::codegen() {
     }
     
     Value *ret_val = stmts->codegen();
+    if(ret_val){
+      // add a return statement
+      if(typespecs2stg(func_decl->decl_specs->type_specs) == VD){
+        llvm_builder->CreateRetVoid();
+      }
+      else{
+        AllocaInst *Alloca = CreateEntryBlockAlloca(func, func_decl->decl_specs, func_decl->ptr_depth , func_decl->ident);
+        Value* v = llvm_builder->CreateLoad(getType(typespecs2stg(func_decl->decl_specs->type_specs), func_decl->ptr_depth), Alloca, "returnval");
+        llvm_builder->CreateRet(v);
+      }
+    }
     if (/* Value *ret_val = stmts->codegen() */true) {           // if and while return nullptr for now. change during error handling maybe
 
       verifyFunction(*func);
