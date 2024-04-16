@@ -253,13 +253,22 @@ string BlockStatement::dump_ast(string prefix) {
 ////////////////////////////////////////////////////////////////////////////////
 
 string Function::dump_ast(string prefix) {
-  cdebug << "Function::dump_ast: " << endl;
   stringstream s;
-  s << func_decl->dump_ast(prefix) << "\n" << prefix;
+  cdebug << "Function::dump_ast: " << endl;
+  if (stmts){
+    s << func_decl->dump_ast(prefix) << "def \n" << prefix;
+  }
+  else{
+    s << func_decl->dump_ast(prefix) << "decl \n" << prefix;
+  }
+  
   if (params) {
     s << "`- params: " << params->dump_ast(prefix+"|  ") << "\n" << prefix;
   }
-  s << "`- block: " << stmts->dump_ast(prefix+"   ");
+
+  if (stmts) {
+    s << "`- block: " << stmts->dump_ast(prefix+"   ");
+  }
   return s.str();
 }
 

@@ -19,6 +19,10 @@ int intLiteralToInt(string &s){
   return stoi(s);
 };
 
+string stringLiteraltoString(string &s){
+  return s.substr(1, s.size() - 2);
+}
+
 double floatLiteralToFloat(string &s){
   // cdebug<<"Entered stod "+ s<<endl;
   double temp = stod(s);
@@ -36,6 +40,7 @@ namespace ast {
  std::unique_ptr<llvm::IRBuilder<>> llvm_builder;
  std::map<std::string, AllocaInst*> llvm_st;
  std::map<std::string, GlobalVariable*> global_st;
+ std::map<std::string, llvm::Function*> func_st;
 
 
 
@@ -167,17 +172,20 @@ llvm::Value* DeclarationStatement::globalgen(){
 }
 
 llvm::Value* Declaration::globalgen(){
-  cout<<"HI"<<endl;
+  // cout<<"HI"<<endl;
+  GlobalVariable* A;
   for(auto init_decl: *decl_list){
-    GlobalVariable* A = new llvm::GlobalVariable(*llvm_mod, getType(decl_specs, init_decl->ptr_depth), false, llvm::GlobalValue::ExternalLinkage, 0, getVarName(init_decl->ident, "g"));
+    A = new llvm::GlobalVariable(*llvm_mod, getType(decl_specs, init_decl->ptr_depth), false, llvm::GlobalValue::CommonLinkage, 0, getVarName(init_decl->ident, "g"));
+    // A->setInitializer(0);
     if(init_decl->init_expr){
-      Value* init_val = init_decl->init_expr->codegen();
+      Value* init_val = init_decl->init_expr->codegen();            // can't do this, evaluate const expression and init global variables with this value
       llvm_builder->CreateStore(init_val, A);
     }
+    // cout<<init_decl->ident->ident_info.idx<<" g location"<<endl;
     global_st[getVarName(init_decl->ident, "g") ] = A;
   }
 
-  return nullptr;
+  return A;
 }
 
 void TranslationUnit::codegen() {
@@ -191,8 +199,10 @@ void TranslationUnit::codegen() {
   for (auto node_ptr: *nodes){
     // cdebug<<"HI1"<<endl;
     if ((decl_ptr = dynamic_cast<DeclarationStatement*>(node_ptr))) {
-      cout<<"READ FUNC DEF"<<endl;
+      // cout<<"READ FUNC DEF"<<endl;
       Value* v = decl_ptr->globalgen();
+      // llvm_mod->print(errs(), nullptr); // print decls
+      // v->print(errs());
       // func_ir->print(errs());
     }
   }
@@ -202,9 +212,11 @@ void TranslationUnit::codegen() {
     if ((func_ptr = dynamic_cast<Function*>(node_ptr))) {
       // cout<<"READ FUNC DEF"<<endl;
       llvm::Function* func_ir = func_ptr->codegen();
-      func_ir->print(errs());
+      // func_ir->print(errs(), nullptr);
     }
   }
+
+   llvm_mod->print(errs(), nullptr);
 }
 
 Value* Expression::codegen(){
@@ -225,6 +237,12 @@ Value* Literal::codegen() {
   float f;
   type_info.is_ref = false;
   type_info.st.ptr_depth = 0;
+  llvm::ArrayType* stringType;
+  llvm::Constant* stringLiteral;
+  llvm::GlobalVariable* stringVar;
+  std::vector<llvm::Value *> values;
+  llvm::APInt zero(32, 0);
+  llvm::APInt one(32, 0);
   switch(ltype) {
         case LT_INT_LIKE:
             v = intLiteralToInt(value);
@@ -242,9 +260,34 @@ Value* Literal::codegen() {
         case LT_DOUBLE:
             type_info.st.stype = FP64;
             return ConstantFP::get(llvm::Type::getDoubleTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
-          case LT_FLOAT_LIKE:
+        case LT_FLOAT_LIKE:
             type_info.st.stype = FP32;
             return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
+        case LT_STRING:
+            stringType = llvm::ArrayType::get(
+                llvm_builder->getInt8Ty(),
+                stringLiteraltoString(value).length()
+            );
+
+            stringLiteral  = llvm::ConstantDataArray::getString(*llvm_ctx, stringLiteraltoString(value), true);
+            stringVar = new llvm::GlobalVariable(
+                *llvm_mod,
+                stringType,
+                true, // Constant (readonly)
+                llvm::GlobalValue::PrivateLinkage,
+                stringLiteral,
+                ".str"  // Name of the string literal
+            );
+
+            
+            // This is the array offset into RaviGCObject*
+            values.push_back(
+              llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), zero));
+            // This is the field offset
+            values.push_back(
+            llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), one));
+
+            return llvm_builder->CreateGEP( stringVar->getValueType(),stringVar, values);
         default:
             cout<<"invalid literal"<<endl;
             return nullptr;
@@ -257,21 +300,38 @@ Value* Identifier::get_address(){
   type_info.st = ident_info;
   type_info.is_ref = true;
 
-  return llvm_st[getVarName(this, "l")];
+  AllocaInst* A;
+  int idx = ident_info.idx;
+  if(idx < 0){
+    // cout<<idx<<"GLOBAL"<<endl;
+    GlobalVariable* A = global_st[ getVarName(this, "g")];
+    type_info.st= ident_info;
+    type_info.is_ref = true;
+    return A;
+  }
+  else{
+    A = llvm_st["l" + to_string(idx)];
+  }
+ 
+  type_info.st = ident_info;
+  type_info.is_ref = true;
+  return A;
+
 }
 
 
 Value *BinaryExpression::codegen() {
   if (op == OP_ASSIGN){
     // cdebug<<"calling getaddr"<<endl;
-    Value* A = lhs->get_address(); 
-    // Value* a = lhs->assign(rhs);
-    // cdebug<<"calling codegen"<<endl;
-    Value* R = rhs->codegen();
+    Value* V = (lhs->get_address());
 
+    
+    // AllocaInst* A = llvm::dyn_cast<AllocaInst>(V); 
+    Value* A = V;
+ 
+    Value* R = rhs->codegen();
     type_info.st = rhs->type_info.st;
-    type_info.is_ref = false;                         // should this be rhs->is_ref?? Nope
-    // cout<<lhs->type_info.type<<" "<<rhs->type_info.type<<endl<<lhs->type_info.ptr_depth<<" "<<rhs->type_info.ptr_depth<<endl<<lhs->type_info.is_ref<<endl;
+    type_info.is_ref = false;                       
     if((lhs->type_info.st.stype == rhs->type_info.st.stype) && (lhs->type_info.st.ptr_depth == rhs->type_info.st.ptr_depth) && (lhs->type_info.is_ref)){
       llvm_builder->CreateStore(R, A, "assigntemp");
       return R;
@@ -422,7 +482,7 @@ llvm::Value* FunctionInvocationExpression::codegen(){
   type_info.is_ref = false;
   type_info.st = ident->ident_info;          
   // cdebug<<"Function invocation with type "<<fn->type_info.st.stype<<endl;
-  if (func->arg_size() != num_params){
+  if (func->arg_size() > num_params || ((func->arg_size() < num_params) && (!func->isVarArg())) ){
     cout<<"num args don't match"<<endl;
     return nullptr;
   }
@@ -430,7 +490,7 @@ llvm::Value* FunctionInvocationExpression::codegen(){
 
   vector<Value*> argsV;
   for(int i = 0; i < num_params; i++){
-    argsV.push_back((*params)[i]->codegen());
+    argsV.push_back((*params)[i]->codegen());                   // type check arg types
   }
   
   return llvm_builder->CreateCall(func, argsV, "calltmp");
@@ -440,49 +500,69 @@ llvm::Value* FunctionInvocationExpression::codegen(){
 llvm::Function *Function::codegen() {
   // Uncommenting this causes a segfault !?
   // cdebug << "Generating function code " << func_decl->ident->name << endl;
-  
+  std::string func_name = func_decl->ident->name;
   int num_args = 0;
   if(params){
     num_args = params->params->size();
   }
+  llvm::Function *func;
+  if(func_st.find(func_name) == func_st.end()){
+    
+    std::vector<llvm::Type*> argtypes(num_args);
+    for(int i = 0; i < num_args; i++){
+      argtypes[i] = getType((*(params->params))[i]->decl_specs, (*(params->params))[i]->ptr_depth);  // TODO
+    }
+    bool flag = false;
+    if(params){
+      if(params->has_varargs){
+        flag = true;               //varargs
+      }
+    }
+    FunctionType *func_type = FunctionType::get(getType(func_decl->decl_specs, func_decl->ptr_depth), argtypes, flag);
+    
+    func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, func_name, llvm_mod.get());
 
-  std::vector<llvm::Type*> argtypes(num_args);
-  for(int i = 0; i < num_args; i++){
-    argtypes[i] = getType((*(params->params))[i]->decl_specs, (*(params->params))[i]->ptr_depth);  // TODO
+    int i=0;
+    for (auto &Arg : func->args()){
+      Arg.setName(getVarName((*(params->params))[i]->ident, "v"));                // arg vals -> v, global vars -> g, local vars -> l 
+      i++;
+    }
+
+    func_st[func_name] = func;
+    
   }
-  FunctionType *func_type = FunctionType::get(getType(func_decl->decl_specs, func_decl->ptr_depth), argtypes, false);
-  std::string func_name = func_decl->ident->name;
-  llvm::Function *func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, func_name, llvm_mod.get());
-
-  int i=0;
-  for (auto &Arg : func->args()){
-    Arg.setName(getVarName((*(params->params))[i]->ident, "v"));                // arg vals -> v, global vars -> g, local vars -> l 
-    i++;
+  else{
+    func = func_st[func_name];              // TODO check for redeclaration
   }
+  
 
-
-  BasicBlock *block = BasicBlock::Create(*llvm_ctx, "entry", func);
-  llvm_builder->SetInsertPoint(block);
-  llvm_st.clear();
-  i = 0;
+  if (stmts) {
+    BasicBlock *block = BasicBlock::Create(*llvm_ctx, "entry", func);
+    llvm_builder->SetInsertPoint(block);
+    llvm_st.clear();
+    int i = 0;
   for (auto &Arg : func->args()) {
 
-    AllocaInst *Alloca = CreateEntryBlockAlloca(func, (*(params->params))[i]->decl_specs,  (*(params->params))[i]->ptr_depth , (*(params->params))[i]->ident);
+      AllocaInst *Alloca = CreateEntryBlockAlloca(func, (*(params->params))[i]->decl_specs,  (*(params->params))[i]->ptr_depth , (*(params->params))[i]->ident);
 
-    llvm_builder->CreateStore(&Arg, Alloca);
+      llvm_builder->CreateStore(&Arg, Alloca);
 
-  
-    llvm_st[getVarName((*(params->params))[i]->ident, "l")] = Alloca;
-    i++;
+    
+      llvm_st[getVarName((*(params->params))[i]->ident, "l")] = Alloca;
+      i++;
+    }
+    
+    Value *ret_val = stmts->codegen();
+    if (/* Value *ret_val = stmts->codegen() */true) {           // if and while return nullptr for now. change during error handling maybe
+
+      verifyFunction(*func);
+      return func;
+    }
+    func->eraseFromParent();
   }
-  
-  Value *ret_val = stmts->codegen();
-  if (/* Value *ret_val = stmts->codegen() */true) {           // if and while return nullptr for now. change during error handling maybe
-
-    verifyFunction(*func);
+  else{
     return func;
   }
-  func->eraseFromParent();
   return nullptr;
 }
 
@@ -495,7 +575,7 @@ Value* Identifier::codegen(){
     GlobalVariable* A = global_st[ getVarName(this, "g")];
     type_info.st= ident_info;
     type_info.is_ref = true;
-    return llvm_builder->CreateLoad(A->getType(), A, name);
+    return llvm_builder->CreateLoad(A->getValueType(), A, name);
   }
   else{
     A = llvm_st["l" + to_string(idx)];

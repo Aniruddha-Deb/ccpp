@@ -67,6 +67,7 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 
 %nterm <ast_translation_unit> translation_unit
 %nterm <ast_function> function_definition
+%nterm <ast_function> function_declaration
 %nterm <ast_parameter_list> parameter_list
 // %nterm <ast_parameter>  parameter
 %nterm <ast_block_statement> statement_list
@@ -415,8 +416,10 @@ jump_statement
 
 translation_unit
 	: function_definition { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; }
+    | function_declaration { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; }
 	| declaration { $$ = new ast::TranslationUnit(); $$->add_declaration(new ast::DeclarationStatement($1)); *tu = *$$; }
 	| translation_unit function_definition { $1->add_function($2); $$ = $1; *tu = *$$; }
+    | translation_unit function_declaration { $1->add_function($2); $$ = $1; *tu = *$$; }
 	| translation_unit declaration { $1->add_declaration(new ast::DeclarationStatement($2)); $$ = $1; *tu = *$$; }
 	;
 
@@ -426,6 +429,11 @@ function_definition
   | pure_declaration '(' VOID ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); }
   ;
 
+function_declaration
+  : pure_declaration '(' function_parameter_list ')' ';' { $$ = new ast::Function($1, $3, nullptr); }
+  | pure_declaration '(' ')' ';' { $$ = new ast::Function($1, nullptr, nullptr); }
+  | pure_declaration '(' VOID ')' ';' { $$ = new ast::Function($1, nullptr, nullptr); }
+  ;
 
 %%
 #include <stdio.h>

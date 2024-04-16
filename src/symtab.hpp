@@ -34,6 +34,7 @@ class SymbolTable {
 private:
     std::stack<std::unordered_map<std::string, SymbolInfo>> scopestack;
     int curr_symb_identifier;
+     int depth;
 
 public:
     SymbolTable();

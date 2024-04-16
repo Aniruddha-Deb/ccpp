@@ -184,8 +184,8 @@ void FunctionParameterList::scopify() {
 void Function::scopify() {
   std::string name = func_decl->ident->name;
   cdebug << "Function::scopify: " << name << endl;
-  if (table->check_scope(name)) {
-    cout << "PANIC REDECLARATION\n";
+  if (false/*table->check_scope(name)*/) {                  //TODO removed redecl check
+    // cout << "PANIC REDECLARATION\n";
   } else {
     table->add_symbol(name, {-1, func_decl->ptr_depth, typespecs2st(func_decl->decl_specs->type_specs)});
     cdebug<<"Function decl assigned type "<<typespecs2st(func_decl->decl_specs->type_specs)<<" ptr depth "<<func_decl->ptr_depth<<endl;

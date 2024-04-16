@@ -3,16 +3,18 @@
 
 using namespace std;
 
-SymbolTable::SymbolTable(): scopestack(), curr_symb_identifier{0} {}
+SymbolTable::SymbolTable(): scopestack(), curr_symb_identifier{0}, depth{0} {}
 
 void SymbolTable::enter_scope(){
   // cout<<"ENTERSCOPE---"<<endl;
+  depth++;
   unordered_map<string, SymbolInfo> newscope;
   scopestack.push(newscope);
 }
 
 void SymbolTable::exit_scope(){
   // cout<<"EXITSCOPE\n";
+  depth--;
   if(scopestack.empty()){
     cout<<"PANIC EXIT_SCOPE\n"<<endl;
   }
@@ -56,7 +58,12 @@ void SymbolTable::add_symbol(string x, SymbolInfo info){
     cout<<"PANIC ADD_SYMBOL\n";
   }
   else{
-    info.idx = curr_symb_identifier;
+    if(depth == 1){
+       info.idx = -1-curr_symb_identifier;
+    }
+    else{
+      info.idx = curr_symb_identifier;
+    }
     scopestack.top()[x] = info;
     curr_symb_identifier++;
   }
