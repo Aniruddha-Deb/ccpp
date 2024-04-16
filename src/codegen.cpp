@@ -178,8 +178,7 @@ std::string getVarName(ast::Identifier *ident, std::string prefix){
   return prefix + to_string(abs(idx));
 }
 
-llvm::Type* getType(SymbolInfo symbol_info){
-  SymbolType ts = symbol_info.stype;
+llvm::Type* getType(SymbolType ts, int ptr_depth){
   llvm::Type* t;
   switch (ts) {
     case FP32: t = Type::getFloatTy(*llvm_ctx); break;
@@ -190,9 +189,9 @@ llvm::Type* getType(SymbolInfo symbol_info){
     default: break;
   }
 
-  while (symbol_info.ptr_depth>0) {
+  while (ptr_depth > 0) {
     t = llvm::PointerType::get(t, 0);
-    symbol_info.ptr_depth--;
+    ptr_depth--;
   }
   return t;
 }
@@ -200,7 +199,7 @@ llvm::Type* getType(SymbolInfo symbol_info){
 
 AllocaInst *CreateEntryBlockAlloca(llvm::Function *func, DeclarationSpecifiers* decl_specs, int ptr_depth, Identifier* ident) {
   llvm::IRBuilder<> TmpB(&func->getEntryBlock(), func->getEntryBlock().begin());
-  return TmpB.CreateAlloca(getType({typespecs2stg(decl_specs->type_specs), ptr_depth}), nullptr, getVarName(ident, "l"));
+  return TmpB.CreateAlloca(getType(typespecs2stg(decl_specs->type_specs), ptr_depth), nullptr, getVarName(ident, "l"));
 }
 
 llvm::Value* DeclarationStatement::codegen(){
@@ -231,7 +230,7 @@ llvm::Value* Declaration::globalgen(){
   // cout<<"HI"<<endl;
   GlobalVariable* A;
   for(auto init_decl: *decl_list){
-    A = new llvm::GlobalVariable(*llvm_mod, getType({typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth}), false, llvm::GlobalValue::CommonLinkage, 0, getVarName(init_decl->ident, "g"));
+    A = new llvm::GlobalVariable(*llvm_mod, getType(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth), false, llvm::GlobalValue::CommonLinkage, 0, getVarName(init_decl->ident, "g"));
     // A->setInitializer(0);
 
     if(init_decl->init_expr){                                        // change
@@ -482,7 +481,7 @@ Value* UnaryExpression::codegen(){
       // removed the getElementType, segfaults now though
       // also changed loc to idx (more descriptive) 
       // llvm::cast<llvm::PointerType>(R->getType()))->getElementType()
-      return llvm_builder->CreateLoad(getType(type_info.st), R, "dereftemp");
+      return llvm_builder->CreateLoad(getType(type_info.st.stype, type_info.st.ptr_depth), R, "dereftemp");
     case OP_AND:
       R = expr->get_address();
       type_info= expr->type_info;
@@ -573,8 +572,8 @@ llvm::Function *Function::codegen() {
     
     std::vector<llvm::Type*> argtypes(num_args);
     for(int i = 0; i < num_args; i++){
-      PureDeclaration* param = (*(params->params))[i];
-      argtypes[i] = getType({typespecs2stg(param->decl_specs->type_specs), param->ptr_depth});
+      PureDeclaration* decl = (*(params->params))[i];
+      argtypes[i] = getType(typespecs2stg(decl->decl_specs->type_specs), decl->ptr_depth);
     }
     bool flag = false;
     if(params){
@@ -582,7 +581,7 @@ llvm::Function *Function::codegen() {
         flag = true;               //varargs
       }
     }
-    FunctionType *func_type = FunctionType::get(getType({typespecs2stg(func_decl->decl_specs->type_specs), func_decl->ptr_depth}), argtypes, flag);
+    FunctionType *func_type = FunctionType::get(getType(typespecs2stg(func_decl->decl_specs->type_specs), func_decl->ptr_depth), argtypes, flag);
     
     func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, func_name, llvm_mod.get());
 
