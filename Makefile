@@ -11,7 +11,7 @@ ifneq ($(OS),Darwin)
 	BISON=bison
 endif
 
-DEBUG=-DDEBUG
+DEBUG=#-DDEBUG
 
 SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp src/codegen.cpp src/scopify.cpp
 OBJ=$(patsubst src/%.cpp, bin/%.o, $(SRC))

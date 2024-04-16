@@ -28,6 +28,25 @@ double floatLiteralToFloat(string &s){
   return temp;
 }
 
+std::string stype2str(SymbolType stype) {
+  switch(stype) {
+    case FP32: return "FP32";
+    case FP64: return "FP64";
+    case I1: return "I1";
+    case I8: return "I8";
+    case I16: return "I16";
+    case I32: return "I32";
+    case I64: return "I64";
+    case U8: return "U8";
+    case U16: return "U16";
+    case U32: return "U32";
+    case U64: return "U64";
+    case PTR: return "PTR";
+    case FUNC: return "FUNC";
+    case UNK: return "UNK";
+  }
+}
+
 using namespace llvm;
 
 namespace ast {
@@ -61,7 +80,10 @@ bool is_fp_type(SymbolType ty) {
 }
 
 Value* handleAdd(Value* L, Value* R, SymbolType ty){
-  if (is_int_type(ty)) return llvm_builder->CreateAdd(L, R, "temp");
+  if (is_int_type(ty)) {
+    cout << "INT TYPE" << endl;
+    return llvm_builder->CreateAdd(L, R, "temp");
+  }
   else if (is_fp_type(ty)) return llvm_builder->CreateFAdd(L, R, "temp");
   else return nullptr;
 }
@@ -159,6 +181,7 @@ Value* handleXor(Value* L, Value* R, SymbolType ty) {
 SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
   if (type_specs.find(TS_FLOAT) != type_specs.end()) return FP32;
   if (type_specs.find(TS_DOUBLE) != type_specs.end()) return FP64;
+  if (type_specs.find(TS_BOOL) != type_specs.end()) return I1;
   if (type_specs.find(TS_UNSIGNED) != type_specs.end()) {
     if (type_specs.find(TS_SHORT) != type_specs.end()) return U16;
     if (type_specs.find(TS_LONG) != type_specs.end()) return U64;
@@ -183,9 +206,15 @@ llvm::Type* getType(SymbolType ts, int ptr_depth){
   switch (ts) {
     case FP32: t = Type::getFloatTy(*llvm_ctx); break;
     case FP64: t = Type::getDoubleTy(*llvm_ctx); break;
-    case I32: t = Type::getInt32Ty(*llvm_ctx); break;
-    case I64: t = Type::getInt64Ty(*llvm_ctx); break;
-    case U8: t = Type::getInt8Ty(*llvm_ctx); break;
+    case I1:   t = Type::getInt1Ty(*llvm_ctx); break;
+    case I8:   
+    case U8:   t = Type::getInt8Ty(*llvm_ctx); break;
+    case I16:  
+    case U16:  t = Type::getInt16Ty(*llvm_ctx); break;
+    case I32:  
+    case U32:  t = Type::getInt32Ty(*llvm_ctx); break;
+    case I64:  
+    case U64:  t = Type::getInt64Ty(*llvm_ctx); break;
     default: break;
   }
 
@@ -402,7 +431,10 @@ Value *BinaryExpression::codegen() {
     }
   }
   Value *L = lhs->codegen();
+  // @jai why tf is this a float. Where are we setting type_info for non-literals?
+  cout << stype2str(lhs->type_info.st.stype) << endl;
   Value *R = rhs->codegen();
+  cout << stype2str(rhs->type_info.st.stype) << endl;
   // TODO type check. error if types don't match
 
   if (!L || !R)
@@ -418,7 +450,6 @@ Value *BinaryExpression::codegen() {
   switch (op) {
     case OP_ADD:
       type_info.st.stype = lhs->type_info.st.stype;
-      
       return handleAdd(L, R, lhs->type_info.st.stype);
     case OP_SUB:
       type_info.st.stype = lhs->type_info.st.stype;
