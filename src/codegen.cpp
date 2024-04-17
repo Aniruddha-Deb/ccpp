@@ -272,7 +272,7 @@ llvm::Value* Declaration::globalgen(){
   // cout<<"HI"<<endl;
   GlobalVariable* A;
   for(auto init_decl: *decl_list){
-    A = new llvm::GlobalVariable(*llvm_mod, getType(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth), false, llvm::GlobalValue::CommonLinkage, 0, getVarName(init_decl->ident, "g"));
+    A = new llvm::GlobalVariable(*llvm_mod, getType(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth), false, llvm::GlobalValue::ExternalLinkage, 0, init_decl->ident->name /*getVarName(init_decl->ident, "g")*/);
     // A->setInitializer(0);
 
     if(init_decl->init_expr) {                                        // change
@@ -289,7 +289,7 @@ llvm::Value* Declaration::globalgen(){
       ConstantInt* default_val = ConstantInt::get(*llvm_ctx, APInt(32,0)); // TODO type check
       A->setInitializer(default_val);                           
     }
-    global_st[getVarName(init_decl->ident, "g")] = A;
+    global_st[init_decl->ident->name /*getVarName(init_decl->ident, "g")*/] = A;
   }
 
   return A;
@@ -413,7 +413,7 @@ Value* Identifier::get_address(){
   int idx = ident_info.idx;
   if(idx < 0){
     // cout<<idx<<"GLOBAL"<<endl;
-    GlobalVariable* A = global_st[ getVarName(this, "g")];
+    GlobalVariable* A = global_st[ name/*getVarName(this, "g")*/];
     type_info.st= ident_info;
     type_info.is_ref = true;
     return A;
@@ -708,7 +708,7 @@ Value* Identifier::codegen(){
   int idx = ident_info.idx;
   if(idx < 0){
     cout<<idx<<"GLOVAL"<<endl;
-    GlobalVariable* A = global_st[ getVarName(this, "g")];
+    GlobalVariable* A = global_st[ name /*getVarName(this, "g")*/];
     type_info.st= ident_info;
     type_info.is_ref = true;
     return llvm_builder->CreateLoad(A->getValueType(), A, name);
