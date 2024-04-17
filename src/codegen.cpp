@@ -309,7 +309,7 @@ llvm::Value* Declaration::globalgen(){
   for(auto init_decl: *decl_list){
     Type* t = getType(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth);
     int tsize = getTypeSize(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth);
-    A = new llvm::GlobalVariable(*llvm_mod, t, false, llvm::GlobalValue::ExternalLinkage, 0, getVarName(init_decl->ident, "g"));
+    A = new llvm::GlobalVariable(*llvm_mod, t, false, llvm::GlobalValue::ExternalLinkage, 0, init_decl->ident->name);
 
     if(init_decl->init_expr) {
       Literal *l;
@@ -324,11 +324,7 @@ llvm::Value* Declaration::globalgen(){
       A->setInitializer(getDefaultInitializer(typespecs2stg(decl_specs->type_specs)));
     }
     A->setAlignment(MaybeAlign(tsize));
-<<<<<<< Updated upstream
     global_st[init_decl->ident->name ] = A;
-=======
-    global_st[getVarName(init_decl->ident, "g")] = A;
->>>>>>> Stashed changes
   }
 
   return A;
