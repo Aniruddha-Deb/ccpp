@@ -34,7 +34,7 @@ main(int argc, char **argv)
   std::cout << "Done scopifying" << std::endl;
   std::cout << tu->dump_ast("") << std::endl;
 
-  printf("retv = %d\n", ret);
+  // printf("retv = %d\n", ret);
   tu->codegen();
   exit(0);
 }

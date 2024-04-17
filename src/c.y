@@ -294,9 +294,9 @@ init_declarator_list
 
 init_declarator
 	: pointer_list IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), $4); }
-	| IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator(new ast::Identifier($1), $3); }
+	| IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator(0, new ast::Identifier($1), $3); }
 	| pointer_list IDENTIFIER { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), nullptr); }
-	| IDENTIFIER { $$ = new ast::InitDeclarator(new ast::Identifier($1), nullptr); }
+	| IDENTIFIER { $$ = new ast::InitDeclarator(0, new ast::Identifier($1), nullptr); }
 	;
 
 pointer_list

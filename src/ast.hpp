@@ -75,6 +75,8 @@ enum LiteralType {
   LT_INT64,
   LT_UINT64,
   LT_INT32,
+  LT_UINT32,
+  LT_CHAR,
   LT_FLOAT,
   LT_DOUBLE,
   LT_INT_LIKE,
@@ -121,6 +123,7 @@ enum FunctionSpecifier {
 };
 
 string op2str(Operator op);
+string lt2str(LiteralType lt);
 string ss2str(StorageSpecifier ss);
 string ts2str(TypeSpecifier ts);
 string tq2str(TypeQualifier tq);
@@ -213,6 +216,7 @@ struct UnaryExpression : Expression {
 struct Literal : Expression {
   string value;
   LiteralType ltype;
+  unsigned long long data;
 
   Literal(string _value, LiteralType _ltype);
   void scopify();
@@ -270,7 +274,6 @@ struct InitDeclarator : Node {
   Expression *init_expr;
 
   InitDeclarator(int _ptr_depth, Identifier *_ident, Expression *_init_expr);
-  InitDeclarator(Identifier *_ident, Expression *_init_expr);
 
   string dump_ast(string prefix);
   void scopify();

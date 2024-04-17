@@ -19,6 +19,9 @@ OBJ=$(patsubst src/%.cpp, bin/%.o, $(SRC))
 cc: src/c.tab.cpp src/c.lex.cpp $(OBJ)
 	$(CC) -std=c++17 $(OBJ) $(INCLUDE) $(LDFLAGS) $(DEBUG) -o $@
 
+test_literal: bin/test_literal.o bin/ast.o bin/dump_ast.o bin/codegen.o bin/scopify.o bin/symtab.o
+	$(CC) -std=c++17 $^ $(INCLUDE) $(LDFLAGS) $(DEBUG) -o $@
+
 bin/%.o: src/%.cpp
 	$(CC) -std=c++17 -c $< $(INCLUDE) $(DEBUG) -o $@
 

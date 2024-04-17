@@ -94,7 +94,7 @@ static int check_type(void);
 {HP}{H}+{IS}?				{ yylval.str = strdup(yytext); return I_CONSTANT; }
 {NZ}{D}*{IS}?				{ yylval.str = strdup(yytext); return I_CONSTANT; }
 "0"{O}*{IS}?				{ yylval.str = strdup(yytext); return I_CONSTANT; }
-{CP}?"'"([^'\\\n]|{ES})+"'"		{ return I_CONSTANT; }
+{CP}?"'"([^'\\\n]|{ES})+"'"		{ yylval.str = strdup(yytext); return I_CONSTANT; } // char literals
 
 {D}+{E}{FS}?				{ yylval.str = strdup(yytext); return F_CONSTANT; }
 {D}*"."{D}+{E}?{FS}?			{ yylval.str = strdup(yytext); return F_CONSTANT; }

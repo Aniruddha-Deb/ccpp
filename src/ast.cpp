@@ -1,5 +1,6 @@
 #include "ast.hpp"
 #include "debug.hpp"
+#include <cmath>
 
 namespace ast {
 
@@ -49,6 +50,21 @@ string op2str(Operator op) {
        case OP_SEQ: return "OP_SEQ";
        default: return "UNKNOWN_OPERATOR";
    }
+}
+
+string lt2str(LiteralType lt) {
+  switch(lt) {
+    case LT_INT64: return "LT_INT64";
+    case LT_UINT64: return "LT_UINT64";
+    case LT_INT32: return "LT_INT32";
+    case LT_UINT32: return "LT_UINT32";
+    case LT_CHAR: return "LT_CHAR";
+    case LT_FLOAT: return "LT_FLOAT";
+    case LT_DOUBLE: return "LT_DOUBLE";
+    case LT_INT_LIKE: return "LT_INT_LIKE";
+    case LT_FLOAT_LIKE: return "LT_FLOAT_LIKE";
+    case LT_STRING: return "LT_STRING";
+  }
 }
 
 string ss2str(StorageSpecifier ss) {
@@ -152,10 +168,156 @@ UnaryExpression::UnaryExpression(Operator _op, Expression *_expr)
     cdebug << "UnaryExpression constructor called" << endl;
 }
 
+int hex2int(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  return 0;
+}
+
+char get_esc_char(char c) {
+  char esctab[256] = {0};
+  esctab['a'] = 0x07;
+  esctab['b'] = 0x08;
+  esctab['e'] = 0x1B;
+  esctab['f'] = 0x0C;
+  esctab['n'] = 0x0A;
+  esctab['r'] = 0x0D;
+  esctab['t'] = 0x09;
+  esctab['v'] = 0x0B;
+  esctab['\\'] = 0x5C;
+  esctab['\''] = 0x27;
+  return esctab[c];
+}
+
+void parse_int_literal(Literal* literal) {
+  string value = literal->value;
+  int i = 0;
+  if (value[0] == '0') {
+    i = 1;
+    if (value.size() == 1) { literal->data = 0; literal->ltype = LT_INT32; return; }
+    if (value[1] == 'x' || value[1] == 'X') { // hex 
+      i = 2;
+      for (; i<value.size(); i++) {
+        if (!isxdigit(value[i])) break;
+        literal->data = (literal->data*16) + hex2int(value[i]);
+      }
+    }
+    else {
+      for (; i<value.size(); i++) {
+        if (value[i] < '0' || value[i] > '7') break;
+        literal->data = (literal->data*8) + (value[i] - '0');
+      }
+    }
+  }
+  else if (isdigit(value[0])) {
+    for (; i<value.size(); i++) {
+      if (value[i] < '0' || value[i] > '9') break;
+      literal->data = (literal->data*10) + (value[i] - '0');
+    }
+  }
+  else if (value[0] == 'u' || value[0] == '\'') {
+    // char
+    i = 1;
+    if (value[i] == '\'') i++;
+    // check escapes and stuff
+    // we don't handle unicode sequences
+    if (value[i] == '\\') {
+      i++;
+      literal->data = get_esc_char(value[i]);
+    }
+    else literal->data = value[i];
+    literal->ltype = LT_CHAR;
+    return;
+  }
+
+  if (i >= value.size()) { literal->ltype = LT_INT32; return; }
+  if (value[i] == 'u' || value[i] == 'U') {
+    i++;
+    if (i >= value.size()) { literal->ltype = LT_UINT32; return; }
+    literal->ltype = LT_UINT64; return; // can only be l, L, ll or LL
+  }
+  else if (value[i] == 'l' || value[i] == 'L') {
+    i++;
+    if (i >= value.size()) { literal->ltype = LT_INT64; return; }
+    i++;
+    if (i >= value.size()) { literal->ltype = LT_INT64; return; }
+    if (value[i] == 'U' || value[i] == 'u') { literal->ltype = LT_UINT64; return; }
+    i++;
+    if (i >= value.size()) { literal->ltype = LT_INT64; return; }
+    if (value[i] == 'U' || value[i] == 'u') { literal->ltype = LT_UINT64; return; }
+  }
+  cout << "ERROR: literal should be parsed by now" << endl;
+  return;
+}
+
+void parse_float_literal(Literal* literal) {
+  double d = 0.0;
+  string value = literal->value;
+
+  // floats are guaranteed to have two chars atleast
+  int fpos=0, i=0;
+  bool hexfloat = false;
+  if (value[0] == '0' && (value[1] == 'x' || value[1] == 'X')) {
+    // hexfloat
+    // find the position of the fp first 
+    hexfloat = true;
+    fpos = i = 2;
+    int neg = -1;
+    while (fpos < value.size() && value[fpos] != '.') fpos++;
+    for (; i<value.size(); i++) {
+      if (!isxdigit(value[i]) && value[i] != '.') break;
+      if (value[i] == '.') { neg = 0; continue; }
+      d += double(hex2int(value[i])) * pow(16, fpos-i+neg);
+    }
+  }
+  else {
+    // intfloat
+    int neg = -1;
+    while (fpos < value.size() && value[fpos] != '.') fpos++;
+    for (; i<value.size(); i++) {
+      if (!isdigit(value[i]) && value[i] != '.') break;
+      if (value[i] == '.') {neg = 0; continue; }
+      d += double(value[i] - '0') * pow(10, fpos-i+neg);
+    }
+  }
+  if (i < value.size() && (value[i] == 'p' || value[i] == 'P' || value[i] == 'e' || value[i] == 'E')) {
+    // exponent
+    i++;
+    int exp = 0;
+    int sign = 1;
+    if (i < value.size()) {
+      if (value[i] == '-') { sign = -1; i++; }
+      else if (value[i] == '+') { i++; }
+    }
+    for (;i < value.size(); i++) {
+      if (!isdigit(value[i])) break;
+      exp = (exp*10) + (value[i] - '0');
+    }
+    exp *= sign;
+    if (hexfloat) d *= pow(2, exp);
+    else d *= pow(10, exp);
+  }
+  if (i < value.size() && value[i] == 'f') literal->ltype = LT_FLOAT;
+  else literal->ltype = LT_DOUBLE;
+
+  literal->data = *((long*)&d);
+}
+
 Literal::Literal(string _value, LiteralType _ltype)
-    : value(_value), ltype(_ltype) {
-    cdebug << "Literal constructor called with value: " << _value << endl;
-    // TODO parse literal to int/float etc
+    : value(_value), ltype(_ltype), data{0} {
+  cdebug << "Literal constructor called with value: " << _value << endl;
+  // parse literal to int/float etc
+  // has to be done here for us to be able to evaluate literal expressions 
+  // instantaneously
+  switch (ltype) {
+    case LT_INT_LIKE:
+      parse_int_literal(this);
+      break;
+    case LT_FLOAT_LIKE:
+      parse_float_literal(this);
+      break;
+  }
 }
 
 ExpressionStatement::ExpressionStatement(Expression *_expr) : expr(_expr) {
@@ -302,11 +464,6 @@ FunctionParameterList::FunctionParameterList(std::vector<PureDeclaration*>* _par
 InitDeclarator::InitDeclarator(int _ptr_depth, Identifier *_ident,
                                Expression *_init_expr)
     : ptr_depth{_ptr_depth}, ident{_ident}, init_expr{_init_expr} {
-    cdebug << "InitDeclarator constructor called" << endl;
-}
-
-InitDeclarator::InitDeclarator(Identifier *_ident, Expression *_init_expr)
-    : ptr_depth{0}, ident{_ident}, init_expr{_init_expr} {
     cdebug << "InitDeclarator constructor called" << endl;
 }
 

@@ -275,16 +275,18 @@ llvm::Value* Declaration::globalgen(){
     A = new llvm::GlobalVariable(*llvm_mod, getType(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth), false, llvm::GlobalValue::CommonLinkage, 0, getVarName(init_decl->ident, "g"));
     // A->setInitializer(0);
 
-    if(init_decl->init_expr){                                        // change
-      Value* init_val = init_decl->init_expr->codegen();             // this to const exp evaluation
-      llvm_builder->CreateStore(init_val, A);
+    if(init_decl->init_expr) {                                        // change
+      Value* init_val = init_decl->init_expr->codegen();            // this to const exp evaluation
+      llvm_builder->CreateStore(init_val, A); // ahh can't do a store lol 
     }
-    else{
-      // A->setInitializer(0);                                  // idk ig we have to init global variables to make them work
-      (0);
+    else {
+      cout << "No init expr" << endl;
+      ConstantInt* default_val = ConstantInt::get(*llvm_ctx, APInt(32,0)); // TODO type check
+      A->setInitializer(default_val);                                  // idk ig we have to init global variables to make them work
+      // (0);
     }
     // cout<<init_decl->ident->ident_info.idx<<" g location"<<endl;
-    global_st[getVarName(init_decl->ident, "g") ] = A;
+    global_st[getVarName(init_decl->ident, "g")] = A;
   }
 
   return A;
