@@ -183,14 +183,11 @@ Value* handleLshift(Value* L, Value* R, SymbolType ty){
   else return nullptr;
 }
 
-
 Value* handleRshift(Value* L, Value* R, SymbolType ty) {
   if (is_signed_int_type(ty)) return llvm_builder->CreateAShr(L, R, "srshifttemp");
   else if (is_unsigned_int_type(ty)) return llvm_builder->CreateLShr(L, R, "urshifttemp");
   else return nullptr;
 }
-
-
 
 SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
   if (type_specs.find(TS_FLOAT) != type_specs.end()) return FP32;
@@ -444,10 +441,9 @@ Value *BinaryExpression::codegen() {
     }
   }
   Value *L = lhs->codegen();
-  // @jai why tf is this a float. Where are we setting type_info for non-literals? Identifier::codegen(). we werent calling scopify() on initexpressions :(
-  // cout << stype2str(lhs->type_info.st.stype) << endl;
+  cout << stype2str(lhs->type_info.st.stype) << endl;
   Value *R = rhs->codegen();
-  // cout << stype2str(rhs->type_info.st.stype) << endl;
+  cout << stype2str(rhs->type_info.st.stype) << endl;
   // TODO type check. error if types don't match
 
   if (!L || !R)

@@ -300,7 +300,7 @@ init_declarator
 	;
 
 pointer_list
-  : '*' pointer_list { $$++; }
+  : '*' pointer_list { $$ = $2 + 1; }
   | '*' { $$ = 1; }
   ;
 
