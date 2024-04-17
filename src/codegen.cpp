@@ -276,16 +276,19 @@ llvm::Value* Declaration::globalgen(){
     // A->setInitializer(0);
 
     if(init_decl->init_expr) {                                        // change
-      Value* init_val = init_decl->init_expr->codegen();            // this to const exp evaluation
-      llvm_builder->CreateStore(init_val, A); // ahh can't do a store lol 
+      Literal *l;
+      if (!(l = dynamic_cast<Literal*>(init_decl->init_expr))) {
+        cout << "ERROR: globals can only take constant values" << endl;
+        return nullptr;
+      }
+      Constant* init_val = l->codegen();            // this to const exp evaluation
+      A->setInitializer(init_val); // ahh can't do a store lol 
     }
     else {
       cout << "No init expr" << endl;
       ConstantInt* default_val = ConstantInt::get(*llvm_ctx, APInt(32,0)); // TODO type check
-      A->setInitializer(default_val);                                  // idk ig we have to init global variables to make them work
-      // (0);
+      A->setInitializer(default_val);                           
     }
-    // cout<<init_decl->ident->ident_info.idx<<" g location"<<endl;
     global_st[getVarName(init_decl->ident, "g")] = A;
   }
 
@@ -336,7 +339,7 @@ Value* ExpressionStatement::codegen(){
   return expr->codegen();
 }
 
-Value* Literal::codegen() {
+Constant* Literal::codegen() {
   int v;
   float f;
   type_info.is_ref = false;
@@ -348,47 +351,52 @@ Value* Literal::codegen() {
   llvm::APInt zero(32, 0);
   llvm::APInt one(32, 0);
   switch(ltype) {
+    case LT_INT32:
+      type_info.st.stype = I32;
+      return ConstantInt::get(*llvm_ctx, APInt(32, data.i));
+    case LT_UINT32:
+      type_info.st.stype = U32;
+      return ConstantInt::get(*llvm_ctx, APInt(32, data.i));
+    case LT_INT64:
+      type_info.st.stype = I64;
+      return ConstantInt::get(*llvm_ctx, APInt(64, data.i));
+    case LT_UINT64:
+      type_info.st.stype = U64;
+      return ConstantInt::get(*llvm_ctx, APInt(64, data.i));
+    case LT_FLOAT:
+      type_info.st.stype = FP32;
+      return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(data.f));
+    case LT_DOUBLE:
+      type_info.st.stype = FP64;
+      return ConstantFP::get(llvm::Type::getDoubleTy(*llvm_ctx), APFloat(data.d));
+
         case LT_INT_LIKE:
-            v = intLiteralToInt(value);
-            type_info.st.stype = I32;
-            return ConstantInt::get(*llvm_ctx, APInt(32, v));
-            break;
-            // break;
-        case LT_INT64:
-            v = intLiteralToInt(value);
-            type_info.st.stype = I64;
-            return ConstantInt::get(*llvm_ctx, APInt(64, v));
-        case LT_FLOAT:
-            type_info.st.stype = FP32;
-            return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
-        case LT_DOUBLE:
-            type_info.st.stype = FP64;
-            return ConstantFP::get(llvm::Type::getDoubleTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
+          cout << "ERROR: should have parsed int_like by now" << endl;
         case LT_FLOAT_LIKE:
-            type_info.st.stype = FP32;
-            return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(floatLiteralToFloat(value)));
+          cout << "ERROR: should have parsed float_like by now" << endl;
         case LT_STRING:
-            stringType = llvm::ArrayType::get(
-                llvm_builder->getInt8Ty(),
-                stringLiteraltoString(value).length() + 1
-            );
+            // stringVar = new llvm::GlobalVariable(
+            //     *llvm_mod,
+            //     stringType,
+            //     true, // Constant (readonly)
+            //     llvm::GlobalValue::PrivateLinkage,
+            //     stringLiteral,
+            //     ".str"  // Name of the string literal
+            // );
+          // stringLiteral  = llvm::ConstantDataArray::getString(*llvm_ctx, stringLiteraltoString(value), true);
+          return llvm_builder->CreateGlobalStringPtr(StringRef(value), ".str");
+            // stringType = llvm::ArrayType::get(
+            //     llvm_builder->getInt8Ty(),
+            //     stringLiteraltoString(value).length() + 1
+            // );
 
-            stringLiteral  = llvm::ConstantDataArray::getString(*llvm_ctx, stringLiteraltoString(value), true);
-            stringVar = new llvm::GlobalVariable(
-                *llvm_mod,
-                stringType,
-                true, // Constant (readonly)
-                llvm::GlobalValue::PrivateLinkage,
-                stringLiteral,
-                ".str"  // Name of the string literal
-            );
 
-            values.push_back(
-              llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), zero));
-            values.push_back(
-            llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), one));
+            // values.push_back(
+            //   llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), zero));
+            // values.push_back(
+            // llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), one));
 
-            return llvm_builder->CreateGEP( stringVar->getValueType(),stringVar, values);
+            // return llvm_builder->CreateGEP( stringVar->getValueType(),stringVar, values);
         default:
             cout<<"invalid literal"<<endl;
             return nullptr;

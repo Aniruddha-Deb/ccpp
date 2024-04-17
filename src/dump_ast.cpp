@@ -85,6 +85,12 @@ string UnaryExpression::dump_ast(string prefix) {
 
 string Literal::dump_ast(string prefix) {
   cdebug << "Literal::dump_ast: " << endl;
+  if (value == "") {
+    string s = to_string(data.l);
+    if (ltype == LT_DOUBLE) s = to_string(data.d);
+    else if (ltype == LT_FLOAT) s = to_string(data.f);
+    return lt2str(ltype) + " (" + s + ")";
+  }
   return "literal (" + value + ")";
 }
 

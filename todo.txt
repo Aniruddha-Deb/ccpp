@@ -23,7 +23,7 @@
 
 @Wednesday:
 - [ ] Globals
-- [ ] Literal parsing properly
+- [X] Literal parsing properly
 - [ ] Eager evaluation of literals
 - [ ] Unary ops (implement as binary with implicit op)
 - [ ] Assignment ops (+=, -= etc)

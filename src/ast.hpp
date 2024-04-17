@@ -156,11 +156,11 @@ struct Identifier : Expression {
   SymbolInfo ident_info;
 
   Identifier(string _name);
-  string dump_ast(string prefix);
+  string dump_ast(string prefix) override;
   llvm::Value* codegen() override;
   // llvm::Value* assign(Expression* R) override;
   llvm::Value* get_address() override;
-  void scopify();
+  void scopify() override;
 };
 
 struct TernaryExpression : Expression {
@@ -184,9 +184,9 @@ struct FunctionInvocationExpression : Expression {
   FunctionInvocationExpression(Expression *_fn);
   FunctionInvocationExpression(Expression *_fn, vector<Expression *> *_params);
 
-  string dump_ast(string prefix);
+  string dump_ast(string prefix) override;
   llvm::Value* codegen() override;
-  void scopify();
+  void scopify() override;
   ~FunctionInvocationExpression();
 };
 
@@ -196,8 +196,8 @@ struct BinaryExpression : Expression {
   Expression *rhs;
 
   BinaryExpression(Expression *_lhs, Operator _op, Expression *_rhs);
-  string dump_ast(string prefix);
-  void scopify();
+  string dump_ast(string prefix) override;
+  void scopify() override;
   llvm::Value* codegen() override;
   ~BinaryExpression();
 };
@@ -209,20 +209,31 @@ struct UnaryExpression : Expression {
   UnaryExpression(Operator _op, Expression *_expr);
   llvm::Value* codegen() override;
   llvm::Value* get_address() override;
-  string dump_ast(string prefix);                      // Add assign method
-  void scopify();
+  string dump_ast(string prefix) override;                      // Add assign method
+  void scopify() override;
 };
 
 struct Literal : Expression {
   string value;
   LiteralType ltype;
-  unsigned long long data;
+  union {
+    long l;
+    int i;
+    double d;
+    float f;
+  } data;
 
   Literal(string _value, LiteralType _ltype);
-  void scopify();
-  llvm::Value* codegen() override;
-  string dump_ast(string prefix);
+  Literal(long data, LiteralType _ltype);
+  Literal(float data, LiteralType _ltype);
+  Literal(double data, LiteralType _ltype);
+  void scopify() override;
+  llvm::Constant* codegen() override;
+  string dump_ast(string prefix) override;
 };
+
+Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* rhs);
+Expression* allocateUnaryExpression(Operator op, Expression* expr);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Declarations
@@ -306,8 +317,8 @@ struct DeclarationStatement : Statement {
   Declaration *decl;
 
   DeclarationStatement(Declaration *_decl);
-  string dump_ast(string prefix);
-  void scopify();
+  string dump_ast(string prefix) override;
+  void scopify() override;
   llvm::Value* codegen() override;
   llvm::Value* globalgen();
   ~DeclarationStatement();
@@ -317,8 +328,8 @@ struct ExpressionStatement : Statement {
   Expression *expr;
 
   ExpressionStatement(Expression *_expr);
-  string dump_ast(string prefix);
-  void scopify();
+  string dump_ast(string prefix) override;
+  void scopify() override;
   llvm::Value* codegen() override;
   ~ExpressionStatement();
 };
@@ -331,8 +342,8 @@ struct IfStatement : Statement {
 
   IfStatement(Expression *_cond, Statement *_true_branch,
               Statement *_false_branch);
-  string dump_ast(string prefix);
-  void scopify();
+  string dump_ast(string prefix) override;
+  void scopify() override;
   llvm::Value* codegen() override;
   ~IfStatement();
 };
@@ -355,8 +366,8 @@ struct WhileStatement : Statement {
   Statement *stmt;
 
   WhileStatement(Expression *_cond, Statement *_stmt);
-  string dump_ast(string prefix);
-  void scopify();
+  string dump_ast(string prefix) override;
+  void scopify() override;
   llvm::Value* codegen() override;
   ~WhileStatement();
 };
@@ -378,8 +389,8 @@ struct ReturnStatement : Statement {
   Expression *ret_expr;
 
   ReturnStatement(Expression *_ret_expr);
-  string dump_ast(string prefix);
-  void scopify();
+  string dump_ast(string prefix) override;
+  void scopify() override;
   llvm::Value* codegen() override;
   ~ReturnStatement();
 };
@@ -407,8 +418,8 @@ struct BreakStatement : Statement {
 
 struct BlockStatement : Statement, vector<Statement *> {
 
-  string dump_ast(string prefix);
-  void scopify();
+  string dump_ast(string prefix) override;
+  void scopify() override;
 
   llvm::Value* codegen() override;
   ~BlockStatement();

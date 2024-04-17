@@ -2,6 +2,8 @@
 #include "debug.hpp"
 #include <cmath>
 
+#define I32_MOD (1ULL<<32)
+
 namespace ast {
 
 string op2str(Operator op) {
@@ -195,25 +197,25 @@ void parse_int_literal(Literal* literal) {
   int i = 0;
   if (value[0] == '0') {
     i = 1;
-    if (value.size() == 1) { literal->data = 0; literal->ltype = LT_INT32; return; }
+    if (value.size() == 1) { literal->data.i = 0; literal->ltype = LT_INT32; return; }
     if (value[1] == 'x' || value[1] == 'X') { // hex 
       i = 2;
       for (; i<value.size(); i++) {
         if (!isxdigit(value[i])) break;
-        literal->data = (literal->data*16) + hex2int(value[i]);
+        literal->data.l = (literal->data.l*16) + hex2int(value[i]);
       }
     }
     else {
       for (; i<value.size(); i++) {
         if (value[i] < '0' || value[i] > '7') break;
-        literal->data = (literal->data*8) + (value[i] - '0');
+        literal->data.l = (literal->data.l*8) + (value[i] - '0');
       }
     }
   }
   else if (isdigit(value[0])) {
     for (; i<value.size(); i++) {
       if (value[i] < '0' || value[i] > '9') break;
-      literal->data = (literal->data*10) + (value[i] - '0');
+      literal->data.l = (literal->data.l*10) + (value[i] - '0');
     }
   }
   else if (value[0] == 'u' || value[0] == '\'') {
@@ -224,9 +226,9 @@ void parse_int_literal(Literal* literal) {
     // we don't handle unicode sequences
     if (value[i] == '\\') {
       i++;
-      literal->data = get_esc_char(value[i]);
+      literal->data.l = get_esc_char(value[i]);
     }
-    else literal->data = value[i];
+    else literal->data.l = value[i];
     literal->ltype = LT_CHAR;
     return;
   }
@@ -298,10 +300,14 @@ void parse_float_literal(Literal* literal) {
     if (hexfloat) d *= pow(2, exp);
     else d *= pow(10, exp);
   }
-  if (i < value.size() && value[i] == 'f') literal->ltype = LT_FLOAT;
-  else literal->ltype = LT_DOUBLE;
-
-  literal->data = *((long*)&d);
+  if (i < value.size() && value[i] == 'f') {
+    literal->ltype = LT_FLOAT;
+    literal->data.f = d;
+  }
+  else {
+    literal->ltype = LT_DOUBLE;
+    literal->data.d = d;
+  }
 }
 
 Literal::Literal(string _value, LiteralType _ltype)
@@ -318,6 +324,86 @@ Literal::Literal(string _value, LiteralType _ltype)
       parse_float_literal(this);
       break;
   }
+}
+
+Literal::Literal(long _data, LiteralType _ltype) :
+  data{0}, ltype(_ltype), value("") { data.l = _data; }
+
+Literal::Literal(float _data, LiteralType _ltype) :
+  data{0}, ltype(_ltype), value("") { data.f = _data; }
+
+Literal::Literal(double _data, LiteralType _ltype) :
+  data{0}, ltype(_ltype), value("") { data.d = _data; }
+
+int get_rank(LiteralType ltype) {
+  if (ltype == LT_CHAR) return 1;
+  if (ltype == LT_INT32 || ltype == LT_UINT32) return 1;
+  if (ltype == LT_INT64 || ltype == LT_UINT64) return 2;
+  if (ltype == LT_FLOAT) return 3;
+  if (ltype == LT_DOUBLE) return 4;
+  return -1;
+}
+
+void widen_literals(Literal* lhslit, Literal* rhslit) {
+  switch (rhslit->ltype) {
+    case LT_DOUBLE: lhslit->data.d = double(lhslit->data.l); break;
+    case LT_FLOAT: lhslit->data.f = float(lhslit->data.l); break;
+  }
+
+  if (get_rank(rhslit->ltype) > get_rank(lhslit->ltype)) lhslit->ltype = rhslit->ltype;
+  else if (get_rank(lhslit->ltype) > get_rank(rhslit->ltype)) rhslit->ltype = lhslit->ltype;
+}
+
+Literal* add_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i + rhs->data.i), lhs->ltype);
+  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f + rhs->data.f, LT_FLOAT);
+  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d + rhs->data.d, LT_DOUBLE);
+  return new Literal((long)(lhs->data.l + rhs->data.l), lhs->ltype);
+}
+
+Literal* sub_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i - rhs->data.i), lhs->ltype);
+  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f - rhs->data.f, LT_FLOAT);
+  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d - rhs->data.d, LT_DOUBLE);
+  return new Literal((long)(lhs->data.l - rhs->data.l), lhs->ltype);
+}
+
+Literal* mul_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i * rhs->data.i), lhs->ltype);
+  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f * rhs->data.f, LT_FLOAT);
+  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d * rhs->data.d, LT_DOUBLE);
+  return new Literal((long)(lhs->data.l * rhs->data.l), lhs->ltype);
+}
+
+// Udiv different from sdiv?
+Literal* div_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i / rhs->data.i), lhs->ltype);
+  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f / rhs->data.f, LT_FLOAT);
+  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d / rhs->data.d, LT_DOUBLE);
+  return new Literal((long)(lhs->data.l / rhs->data.l), lhs->ltype);
+}
+
+Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* rhs) {
+  Literal *lhslit, *rhslit;
+  if ((lhslit = dynamic_cast<Literal*>(lhs)) && (rhslit = dynamic_cast<Literal*>(rhs))) {
+    widen_literals(lhslit, rhslit);
+    Expression *expr;
+    switch(op) {
+      case OP_ADD: expr = add_literals(lhslit, rhslit); break;
+      case OP_SUB: expr = sub_literals(lhslit, rhslit); break;
+      case OP_MUL: expr = mul_literals(lhslit, rhslit); break;
+      case OP_DIV: expr = div_literals(lhslit, rhslit); break;
+      default: return new BinaryExpression(lhslit, op, rhslit);
+    }
+    delete lhs;
+    delete rhs;
+    return expr;
+  }
+  return new BinaryExpression(lhs, op, rhs);
+}
+
+Expression* allocateUnaryExpression(Operator op, Expression* expr) {
+  return new UnaryExpression(op, expr);
 }
 
 ExpressionStatement::ExpressionStatement(Expression *_expr) : expr(_expr) {

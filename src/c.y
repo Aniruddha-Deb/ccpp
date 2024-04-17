@@ -152,8 +152,8 @@ postfix_expression
     | postfix_expression '(' argument_expression_list ')' { $$ = new ast::FunctionInvocationExpression($1, $3); }
     | postfix_expression '.' IDENTIFIER
     | postfix_expression PTR_OP IDENTIFIER
-    | postfix_expression INC_OP { $$ = new ast::UnaryExpression(ast::OP_POST_INCR, $1); }
-    | postfix_expression DEC_OP { $$ = new ast::UnaryExpression(ast::OP_POST_DECR, $1); }
+    | postfix_expression INC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_INCR, $1); }
+    | postfix_expression DEC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_DECR, $1); }
     ;
 
 argument_expression_list
@@ -163,9 +163,9 @@ argument_expression_list
 
 unary_expression
     : postfix_expression { $$ = $1; }
-    | INC_OP unary_expression { $$ = new ast::UnaryExpression(ast::OP_PRE_INCR, $2); }
-    | DEC_OP unary_expression { $$ = new ast::UnaryExpression(ast::OP_PRE_DECR, $2); }
-    | unary_operator postfix_expression { $$ = new ast::UnaryExpression($1, $2); }
+    | INC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_INCR, $2); }
+    | DEC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_DECR, $2); }
+    | unary_operator postfix_expression { $$ = ast::allocateUnaryExpression($1, $2); }
     ;
 
 unary_operator
@@ -179,60 +179,60 @@ unary_operator
 
 multiplicative_expression
     : unary_expression { $$ = $1; }
-    | multiplicative_expression '*' unary_expression { $$ = new ast::BinaryExpression($1, ast::OP_MUL, $3); }
-    | multiplicative_expression '/' unary_expression { $$ = new ast::BinaryExpression($1, ast::OP_DIV, $3); }
-    | multiplicative_expression '%' unary_expression { $$ = new ast::BinaryExpression($1, ast::OP_MOD, $3); }
+    | multiplicative_expression '*' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MUL, $3); }
+    | multiplicative_expression '/' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_DIV, $3); }
+    | multiplicative_expression '%' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MOD, $3); }
     ;
 
 additive_expression
     : multiplicative_expression { $$ = $1; }
-    | additive_expression '+' multiplicative_expression { $$ = new ast::BinaryExpression($1, ast::OP_ADD, $3); }
-    | additive_expression '-' multiplicative_expression { $$ = new ast::BinaryExpression($1, ast::OP_SUB, $3); }
+    | additive_expression '+' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_ADD, $3); }
+    | additive_expression '-' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SUB, $3); }
     ;
 
 shift_expression
     : additive_expression { $$ = $1; }
-    | shift_expression LEFT_OP additive_expression { $$ = new ast::BinaryExpression($1, ast::OP_LSHIFT, $3); }
-    | shift_expression RIGHT_OP additive_expression { $$ = new ast::BinaryExpression($1, ast::OP_RSHIFT, $3); }
+    | shift_expression LEFT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LSHIFT, $3); }
+    | shift_expression RIGHT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_RSHIFT, $3); }
     ;
 
 relational_expression
     : shift_expression { $$ = $1; }
-    | relational_expression '<' shift_expression { $$ = new ast::BinaryExpression($1, ast::OP_LT, $3); }
-    | relational_expression '>' shift_expression { $$ = new ast::BinaryExpression($1, ast::OP_GT, $3); }
-    | relational_expression LE_OP shift_expression { $$ = new ast::BinaryExpression($1, ast::OP_LE, $3); }
-    | relational_expression GE_OP shift_expression { $$ = new ast::BinaryExpression($1, ast::OP_GE, $3); }
+    | relational_expression '<' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LT, $3); }
+    | relational_expression '>' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_GT, $3); }
+    | relational_expression LE_OP shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LE, $3); }
+    | relational_expression GE_OP shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_GE, $3); }
     ;
 
 equality_expression
     : relational_expression { $$ = $1; }
-    | equality_expression EQ_OP relational_expression { $$ = new ast::BinaryExpression($1, ast::OP_EQ, $3); }
-    | equality_expression NE_OP relational_expression { $$ = new ast::BinaryExpression($1, ast::OP_NE, $3); }
+    | equality_expression EQ_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_EQ, $3); }
+    | equality_expression NE_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_NE, $3); }
     ;
 
 and_expression
     : equality_expression { $$ = $1; }
-    | and_expression '&' equality_expression { $$ = new ast::BinaryExpression($1, ast::OP_AND, $3); }
+    | and_expression '&' equality_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_AND, $3); }
     ;
 
 exclusive_or_expression
     : and_expression { $$ = $1; }
-    | exclusive_or_expression '^' and_expression { $$ = new ast::BinaryExpression($1, ast::OP_XOR, $3); }
+    | exclusive_or_expression '^' and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_XOR, $3); }
     ;
 
 inclusive_or_expression
     : exclusive_or_expression { $$ = $1; }
-    | inclusive_or_expression '|' exclusive_or_expression { $$ = new ast::BinaryExpression($1, ast::OP_OR, $3); }
+    | inclusive_or_expression '|' exclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_OR, $3); }
     ;
 
 logical_and_expression
     : inclusive_or_expression { $$ = $1; }
-    | logical_and_expression AND_OP inclusive_or_expression { $$ = new ast::BinaryExpression($1, ast::OP_BOOL_AND, $3); }
+    | logical_and_expression AND_OP inclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_AND, $3); }
     ;
 
 logical_or_expression
     : logical_and_expression { $$ = $1; }
-    | logical_or_expression OR_OP logical_and_expression { $$ = new ast::BinaryExpression($1, ast::OP_BOOL_OR, $3); }
+    | logical_or_expression OR_OP logical_and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_OR, $3); }
     ;
 
 conditional_expression
@@ -242,7 +242,7 @@ conditional_expression
 
 assignment_expression
     : conditional_expression { $$ = $1; }
-    | unary_expression assignment_operator assignment_expression { $$ = new ast::BinaryExpression($1, $2, $3); }
+    | unary_expression assignment_operator assignment_expression { $$ = ast::allocateBinaryExpression($1, $2, $3); }
     ;
 
 assignment_operator
@@ -261,7 +261,7 @@ assignment_operator
 
 expression
     : assignment_expression { $$ = $1; }
-    | expression ',' assignment_expression { $$ = new ast::BinaryExpression($1, ast::OP_SEQ, $3); }
+    | expression ',' assignment_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SEQ, $3); }
     ;
 
 constant_expression

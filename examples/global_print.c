@@ -1,6 +1,6 @@
 void printf(const char* fmt, ...);
 
-int glob;
+int glob = 2 * 3;
 
 int main() {
     
