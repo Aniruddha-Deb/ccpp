@@ -383,6 +383,8 @@ Literal* div_literals(Literal* lhs, Literal* rhs) {
   return new Literal((long)(lhs->data.l / rhs->data.l), lhs->ltype);
 }
 
+// TODO add more operators (bitwise, relational, logical and unary)
+
 Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* rhs) {
   Literal *lhslit, *rhslit;
   if ((lhslit = dynamic_cast<Literal*>(lhs)) && (rhslit = dynamic_cast<Literal*>(rhs))) {
