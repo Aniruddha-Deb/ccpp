@@ -129,7 +129,16 @@ string ts2str(TypeSpecifier ts);
 string tq2str(TypeQualifier tq);
 string fs2str(FunctionSpecifier fs);
 
+struct sympos
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+};
+
 struct Node {
+  sympos pos;
   virtual string dump_ast(string prefix) = 0;
   virtual void scopify() = 0;
 };

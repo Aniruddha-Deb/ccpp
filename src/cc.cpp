@@ -3,6 +3,7 @@
 #include <iostream>
 #include <assert.h>
 #include "ast.hpp"
+#include "error.hpp"
 #include "c.tab.hpp"
 #include "symtab.hpp"
 
@@ -23,6 +24,7 @@ main(int argc, char **argv)
     exit(1);
   }
   char const *filename = argv[1];
+  ehdl::set_filename(filename);
   yyin = fopen(filename, "r");
   assert(yyin);
   ast::TranslationUnit* tu = new ast::TranslationUnit();
@@ -40,6 +42,11 @@ main(int argc, char **argv)
   std::cout << tu->dump_ast("") << std::endl;
 
   // printf("retv = %d\n", ret);
+
+  // if (ehdl::n_errs() > 0) {
+  //   ehdl::print_errs();
+  //   exit(0);
+  // }
   // tu->codegen();
   exit(0);
 }

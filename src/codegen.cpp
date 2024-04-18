@@ -238,6 +238,41 @@ llvm::Type* getType(SymbolType ts, int ptr_depth){
   return t;
 }
 
+Constant* getDefaultInitializer(SymbolType ts){
+  llvm::Type* t;
+  switch (ts) {
+    case FP32: return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(0.0));
+    case FP64: return ConstantFP::get(llvm::Type::getDoubleTy(*llvm_ctx), APFloat(0.0));
+    case I1:   return ConstantInt::get(*llvm_ctx, APInt(1, 0));
+    case I8:   
+    case U8:   return ConstantInt::get(*llvm_ctx, APInt(8, 0));
+    case I16:  
+    case U16:  return ConstantInt::get(*llvm_ctx, APInt(16, 0));
+    case I32:  
+    case U32:  return ConstantInt::get(*llvm_ctx, APInt(32, 0));
+    case I64:  
+    case U64:  return ConstantInt::get(*llvm_ctx, APInt(64, 0));
+    default: return nullptr;
+  }
+}
+
+int getTypeSize(SymbolType ts, int ptr_depth) {
+  if (ptr_depth > 0) return 8;
+  switch (ts) {
+    case FP32: return 4;
+    case FP64: return 8;
+    case I8:   
+    case U8:   return 1;
+    case I16:  
+    case U16:  return 2;
+    case I32:  
+    case U32:  return 4;
+    case I64:  
+    case U64:  return 8;
+    default: return 1;
+  }
+}
+
 
 AllocaInst *CreateEntryBlockAlloca(llvm::Function *func, DeclarationSpecifiers* decl_specs, int ptr_depth, Identifier* ident) {
   llvm::IRBuilder<> TmpB(&func->getEntryBlock(), func->getEntryBlock().begin());
@@ -272,24 +307,24 @@ llvm::Value* Declaration::globalgen(){
   // cout<<"HI"<<endl;
   GlobalVariable* A;
   for(auto init_decl: *decl_list){
-    A = new llvm::GlobalVariable(*llvm_mod, getType(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth), false, llvm::GlobalValue::ExternalLinkage, 0, init_decl->ident->name /*getVarName(init_decl->ident, "g")*/);
-    // A->setInitializer(0);
+    Type* t = getType(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth);
+    int tsize = getTypeSize(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth);
+    A = new llvm::GlobalVariable(*llvm_mod, t, false, llvm::GlobalValue::ExternalLinkage, 0, init_decl->ident->name);
 
-    if(init_decl->init_expr) {                                        // change
+    if(init_decl->init_expr) {
       Literal *l;
       if (!(l = dynamic_cast<Literal*>(init_decl->init_expr))) {
         cout << "ERROR: globals can only take constant values" << endl;
         return nullptr;
       }
-      Constant* init_val = l->codegen();            // this to const exp evaluation
-      A->setInitializer(init_val); // ahh can't do a store lol 
+      Constant* init_val = l->codegen();
+      A->setInitializer(init_val);
     }
     else {
-      cout << "No init expr" << endl;
-      ConstantInt* default_val = ConstantInt::get(*llvm_ctx, APInt(32,0)); // TODO type check
-      A->setInitializer(default_val);                           
+      A->setInitializer(getDefaultInitializer(typespecs2stg(decl_specs->type_specs)));
     }
-    global_st[init_decl->ident->name /*getVarName(init_decl->ident, "g")*/] = A;
+    A->setAlignment(MaybeAlign(tsize));
+    global_st[init_decl->ident->name ] = A;
   }
 
   return A;
