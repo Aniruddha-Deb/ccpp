@@ -1,5 +1,6 @@
 #include "ast.hpp"
 #include "debug.hpp"
+#include "error.hpp"
 #include <cmath>
 
 #define I32_MOD (1ULL<<32)
@@ -249,7 +250,7 @@ void parse_int_literal(Literal* literal) {
     if (i >= value.size()) { literal->ltype = LT_INT64; return; }
     if (value[i] == 'U' || value[i] == 'u') { literal->ltype = LT_UINT64; return; }
   }
-  cout << "ERROR: literal should be parsed by now" << endl;
+  ehdl::err("Could not parse int literal", literal->pos);
   return;
 }
 
@@ -480,47 +481,47 @@ void DeclarationSpecifiers::add_type_specifier(TypeSpecifier ts) {
     // FLOAT cannot be combined with unsigned/signed
     if (ts == TS_FLOAT || ts == TS_DOUBLE) {
         if (!type_specs.empty()) {
-            cout << "ERROR: cannot combine " << ts2str(ts) << " with previous decls\n";
+          ehdl::err("Cannot combine " + ts2str(ts) + " with previous decls", pos);
             return;
         }
     }
     else if (type_specs.find(TS_FLOAT) != type_specs.end() || type_specs.find(TS_DOUBLE) != type_specs.end()) {
-        cout << "ERROR: cannot combine a type specifier with floating point types\n";
+        ehdl::err("cannot combine a type specifier with floating point types", pos);
         return;
     }
 
     if (ts == TS_CHAR) {
         if (type_specs.size() == 1 && !(*type_specs.begin() == TS_SIGNED || *type_specs.begin() == TS_UNSIGNED)) {
-            cout << "ERROR: cannot combine char with previous decls\n";
+            ehdl::err("cannot combine char with previous decls", pos);
             return;
         }
         else if (type_specs.size() > 1) {
-            cout << "ERROR: cannot combine char with previous decls\n";
+            ehdl::err("cannot combine char with previous decls", pos);
             return;
         }
     }
     else if (ts == TS_SIGNED || ts == TS_UNSIGNED) {
         if ((ts == TS_SIGNED && type_specs.find(TS_UNSIGNED) != type_specs.end()) ||
             (ts == TS_UNSIGNED && type_specs.find(TS_SIGNED) != type_specs.end())) {
-            cout << "ERROR: cannot combine signed with unsigned\n";
+            ehdl::err("cannot combine signed with unsigned", pos);
             return;
         }
     }
     else if (ts == TS_SHORT) {
         if (type_specs.find(TS_CHAR) != type_specs.end() || type_specs.find(TS_LONG) != type_specs.end()) {
-            cout << "ERROR: cannot combine short with char, long or llong\n";
+            ehdl::err("cannot combine short with char, long or llong", pos);
             return;
         }
     }
     else if (ts == TS_LONG) {
         if (type_specs.find(TS_CHAR) != type_specs.end() || type_specs.find(TS_SHORT) != type_specs.end()) {
-            cout << "ERROR: cannot combine long with char or short\n";
+            ehdl::err("cannot combine long with char or short", pos);
             return;
         }
     }
     else if (ts == TS_INT) {
         if (type_specs.find(TS_CHAR) != type_specs.end()) {
-            cout << "ERROR: cannot combine int with char\n";
+            ehdl::err("cannot combine int with char", pos);
         }
     }
     type_specs.insert(ts);

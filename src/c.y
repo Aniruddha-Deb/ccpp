@@ -13,6 +13,7 @@ extern "C" FILE *yyin;
 // #define YYERROR_VERBOSE 1
 void yyerror(ast::TranslationUnit* tu, const char *s);
 
+void setpos(ast::Node *n, void* info);
 %}
 
 %parse-param {ast::TranslationUnit* tu}
@@ -127,33 +128,33 @@ void yyerror(ast::TranslationUnit* tu, const char *s);
 /* -Expressions-------------------------------------------------------------- */
 
 primary_expression
-    : IDENTIFIER { $$ = new ast::Identifier($1); }
-    | constant { $$ = $1; }
-    | string { $$ = $1; }
-    | '(' expression ')' { $$ = $2; }
+    : IDENTIFIER { $$ = new ast::Identifier($1); setpos($$, &@$); }
+    | constant { $$ = $1; setpos($$, &@$); }
+    | string { $$ = $1; setpos($$, &@$); }
+    | '(' expression ')' { $$ = $2; setpos($$, &@$); }
     ;
 
 constant
-    : I_CONSTANT { $$ = new ast::Literal($1, ast::LT_INT_LIKE); }
-    | F_CONSTANT { $$ = new ast::Literal($1, ast::LT_FLOAT_LIKE);}
+    : I_CONSTANT { $$ = new ast::Literal($1, ast::LT_INT_LIKE); setpos($$, &@$); }
+    | F_CONSTANT { $$ = new ast::Literal($1, ast::LT_FLOAT_LIKE);setpos($$, &@$); }
     ;
 
 string
-    : STRING_LITERAL { $$ = new ast::Literal($1, ast::LT_STRING); }
+    : STRING_LITERAL { $$ = new ast::Literal($1, ast::LT_STRING); setpos($$, &@$); }
     ;
 
 type_name
     : 
 
 postfix_expression
-    : primary_expression { $$ = $1; }
+    : primary_expression { $$ = $1; setpos($$, &@$); }
     | postfix_expression '[' expression ']'
-    | postfix_expression '(' ')' { $$ = new ast::FunctionInvocationExpression($1); }
-    | postfix_expression '(' argument_expression_list ')' { $$ = new ast::FunctionInvocationExpression($1, $3); }
+    | postfix_expression '(' ')' { $$ = new ast::FunctionInvocationExpression($1); setpos($$, &@$); }
+    | postfix_expression '(' argument_expression_list ')' { $$ = new ast::FunctionInvocationExpression($1, $3); setpos($$, &@$); }
     | postfix_expression '.' IDENTIFIER
     | postfix_expression PTR_OP IDENTIFIER
-    | postfix_expression INC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_INCR, $1); }
-    | postfix_expression DEC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_DECR, $1); }
+    | postfix_expression INC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_INCR, $1); setpos($$, &@$); }
+    | postfix_expression DEC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_DECR, $1); setpos($$, &@$); }
     ;
 
 argument_expression_list
@@ -162,10 +163,10 @@ argument_expression_list
     ;
 
 unary_expression
-    : postfix_expression { $$ = $1; }
-    | INC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_INCR, $2); }
-    | DEC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_DECR, $2); }
-    | unary_operator postfix_expression { $$ = ast::allocateUnaryExpression($1, $2); }
+    : postfix_expression { $$ = $1; setpos($$, &@$); }
+    | INC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_INCR, $2); setpos($$, &@$); }
+    | DEC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_DECR, $2); setpos($$, &@$); }
+    | unary_operator postfix_expression { $$ = ast::allocateUnaryExpression($1, $2); setpos($$, &@$); }
     ;
 
 unary_operator
@@ -178,71 +179,71 @@ unary_operator
     ;
 
 multiplicative_expression
-    : unary_expression { $$ = $1; }
-    | multiplicative_expression '*' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MUL, $3); }
-    | multiplicative_expression '/' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_DIV, $3); }
-    | multiplicative_expression '%' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MOD, $3); }
+    : unary_expression { $$ = $1; setpos($$, &@$); }
+    | multiplicative_expression '*' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MUL, $3); setpos($$, &@$); }
+    | multiplicative_expression '/' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_DIV, $3); setpos($$, &@$); }
+    | multiplicative_expression '%' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MOD, $3); setpos($$, &@$); }
     ;
 
 additive_expression
-    : multiplicative_expression { $$ = $1; }
-    | additive_expression '+' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_ADD, $3); }
-    | additive_expression '-' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SUB, $3); }
+    : multiplicative_expression { $$ = $1; setpos($$, &@$); }
+    | additive_expression '+' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_ADD, $3); setpos($$, &@$); }
+    | additive_expression '-' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SUB, $3); setpos($$, &@$); }
     ;
 
 shift_expression
-    : additive_expression { $$ = $1; }
-    | shift_expression LEFT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LSHIFT, $3); }
-    | shift_expression RIGHT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_RSHIFT, $3); }
+    : additive_expression { $$ = $1; setpos($$, &@$); }
+    | shift_expression LEFT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LSHIFT, $3); setpos($$, &@$); }
+    | shift_expression RIGHT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_RSHIFT, $3); setpos($$, &@$); }
     ;
 
 relational_expression
-    : shift_expression { $$ = $1; }
-    | relational_expression '<' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LT, $3); }
-    | relational_expression '>' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_GT, $3); }
-    | relational_expression LE_OP shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LE, $3); }
-    | relational_expression GE_OP shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_GE, $3); }
+    : shift_expression { $$ = $1; setpos($$, &@$); }
+    | relational_expression '<' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LT, $3); setpos($$, &@$); }
+    | relational_expression '>' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_GT, $3); setpos($$, &@$); }
+    | relational_expression LE_OP shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LE, $3); setpos($$, &@$); }
+    | relational_expression GE_OP shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_GE, $3); setpos($$, &@$); }
     ;
 
 equality_expression
-    : relational_expression { $$ = $1; }
-    | equality_expression EQ_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_EQ, $3); }
-    | equality_expression NE_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_NE, $3); }
+    : relational_expression { $$ = $1; setpos($$, &@$); }
+    | equality_expression EQ_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_EQ, $3); setpos($$, &@$); }
+    | equality_expression NE_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_NE, $3); setpos($$, &@$); }
     ;
 
 and_expression
-    : equality_expression { $$ = $1; }
-    | and_expression '&' equality_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_AND, $3); }
+    : equality_expression { $$ = $1; setpos($$, &@$); }
+    | and_expression '&' equality_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_AND, $3); setpos($$, &@$); }
     ;
 
 exclusive_or_expression
-    : and_expression { $$ = $1; }
-    | exclusive_or_expression '^' and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_XOR, $3); }
+    : and_expression { $$ = $1; setpos($$, &@$); }
+    | exclusive_or_expression '^' and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_XOR, $3); setpos($$, &@$); }
     ;
 
 inclusive_or_expression
-    : exclusive_or_expression { $$ = $1; }
-    | inclusive_or_expression '|' exclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_OR, $3); }
+    : exclusive_or_expression { $$ = $1; setpos($$, &@$); }
+    | inclusive_or_expression '|' exclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_OR, $3); setpos($$, &@$); }
     ;
 
 logical_and_expression
-    : inclusive_or_expression { $$ = $1; }
-    | logical_and_expression AND_OP inclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_AND, $3); }
+    : inclusive_or_expression { $$ = $1; setpos($$, &@$); }
+    | logical_and_expression AND_OP inclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_AND, $3); setpos($$, &@$); }
     ;
 
 logical_or_expression
-    : logical_and_expression { $$ = $1; }
-    | logical_or_expression OR_OP logical_and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_OR, $3); }
+    : logical_and_expression { $$ = $1; setpos($$, &@$); }
+    | logical_or_expression OR_OP logical_and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_OR, $3); setpos($$, &@$); }
     ;
 
 conditional_expression
-    : logical_or_expression { $$ = $1; }
-    | logical_or_expression '?' expression ':' conditional_expression { $$ = new ast::TernaryExpression($1, $3, $5); }
+    : logical_or_expression { $$ = $1; setpos($$, &@$); }
+    | logical_or_expression '?' expression ':' conditional_expression { $$ = new ast::TernaryExpression($1, $3, $5); setpos($$, &@$); }
     ;
 
 assignment_expression
-    : conditional_expression { $$ = $1; }
-    | unary_expression assignment_operator assignment_expression { $$ = ast::allocateBinaryExpression($1, $2, $3); }
+    : conditional_expression { $$ = $1; setpos($$, &@$); }
+    | unary_expression assignment_operator assignment_expression { $$ = ast::allocateBinaryExpression($1, $2, $3); setpos($$, &@$); }
     ;
 
 assignment_operator
@@ -260,31 +261,31 @@ assignment_operator
     ;
 
 expression
-    : assignment_expression { $$ = $1; }
-    | expression ',' assignment_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SEQ, $3); }
+    : assignment_expression { $$ = $1; setpos($$, &@$); }
+    | expression ',' assignment_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SEQ, $3); setpos($$, &@$); }
     ;
 
 constant_expression
-	: conditional_expression { $$ = $1; } /* with constraints - should we implement those? */
+	: conditional_expression { $$ = $1; setpos($$, &@$); } /* with constraints - should we implement those? */
 	;
 
 /* -Declarations------------------------------------------------------------- */
 
 declaration
-	: declaration_specifiers ';' { $$ = new ast::Declaration($1, nullptr); }      /* idk just put nullptr here TODO */
-	| declaration_specifiers init_declarator_list ';' { $$ = new ast::Declaration($1, $2); }
+	: declaration_specifiers ';' { $$ = new ast::Declaration($1, nullptr); setpos($$, &@$); }      /* idk just put nullptr here TODO */
+	| declaration_specifiers init_declarator_list ';' { $$ = new ast::Declaration($1, $2); setpos($$, &@$); }
 	;
 
 
 declaration_specifiers
-	: storage_class_specifier declaration_specifiers { $2->add_storage_specifier($1); $$ = $2; }
-	| storage_class_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_storage_specifier($1); }
-	| type_specifier declaration_specifiers { $2->add_type_specifier($1); $$ = $2; }
-	| type_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_type_specifier($1); }
-	| type_qualifier declaration_specifiers { $2->add_type_qualifier($1); $$ = $2; }
-	| type_qualifier { $$ = new ast::DeclarationSpecifiers(); $$->add_type_qualifier($1); }
-	| function_specifier declaration_specifiers { $2->add_func_specifier($1); $$ = $2; }
-	| function_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_func_specifier($1); }
+	: storage_class_specifier declaration_specifiers { $2->add_storage_specifier($1); $$ = $2; setpos($$, &@$); }
+	| storage_class_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_storage_specifier($1); setpos($$, &@$); }
+	| type_specifier declaration_specifiers { $2->add_type_specifier($1); $$ = $2; setpos($$, &@$); }
+	| type_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_type_specifier($1); setpos($$, &@$); }
+	| type_qualifier declaration_specifiers { $2->add_type_qualifier($1); $$ = $2; setpos($$, &@$); }
+	| type_qualifier { $$ = new ast::DeclarationSpecifiers(); $$->add_type_qualifier($1); setpos($$, &@$); }
+	| function_specifier declaration_specifiers { $2->add_func_specifier($1); $$ = $2; setpos($$, &@$); }
+	| function_specifier { $$ = new ast::DeclarationSpecifiers(); $$->add_func_specifier($1); setpos($$, &@$); }
 	;
 
 init_declarator_list
@@ -293,10 +294,10 @@ init_declarator_list
 	;
 
 init_declarator
-	: pointer_list IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), $4); }
-	| IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator(0, new ast::Identifier($1), $3); }
-	| pointer_list IDENTIFIER { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), nullptr); }
-	| IDENTIFIER { $$ = new ast::InitDeclarator(0, new ast::Identifier($1), nullptr); }
+	: pointer_list IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), $4); setpos($$, &@$); }
+	| IDENTIFIER '=' assignment_expression { $$ = new ast::InitDeclarator(0, new ast::Identifier($1), $3); setpos($$, &@$); }
+	| pointer_list IDENTIFIER { $$ = new ast::InitDeclarator($1, new ast::Identifier($2), nullptr); setpos($$, &@$); }
+	| IDENTIFIER { $$ = new ast::InitDeclarator(0, new ast::Identifier($1), nullptr); setpos($$, &@$); }
 	;
 
 pointer_list
@@ -351,62 +352,62 @@ parameter_list
 	;
 
 pure_declaration
-	: declaration_specifiers pointer_list IDENTIFIER { $$ = new ast::PureDeclaration($1, $2, new ast::Identifier($3)); } 
-	| declaration_specifiers IDENTIFIER { $$ = new ast::PureDeclaration($1, 0, new ast::Identifier($2)); }
+	: declaration_specifiers pointer_list IDENTIFIER { $$ = new ast::PureDeclaration($1, $2, new ast::Identifier($3)); setpos($$, &@$); } 
+	| declaration_specifiers IDENTIFIER { $$ = new ast::PureDeclaration($1, 0, new ast::Identifier($2)); setpos($$, &@$); }
         ;
 
 /* -Statements--------------------------------------------------------------- */
 
 statement
-	: labeled_statement { $$ = $1; }
-  | declaration_statement { $$ = $1; }
-	| compound_statement { $$ = $1; }
-	| expression_statement { $$ = $1; }
-	| selection_statement { $$ = $1; }
-	| iteration_statement { $$ = $1; }
-	| jump_statement { $$ = $1; }
+	: labeled_statement { $$ = $1; setpos($$, &@$); }
+  | declaration_statement { $$ = $1; setpos($$, &@$); }
+	| compound_statement { $$ = $1; setpos($$, &@$); }
+	| expression_statement { $$ = $1; setpos($$, &@$); }
+	| selection_statement { $$ = $1; setpos($$, &@$); }
+	| iteration_statement { $$ = $1; setpos($$, &@$); }
+	| jump_statement { $$ = $1; setpos($$, &@$); }
 	;
 
 declaration_statement
-  : declaration { $$ = new ast::DeclarationStatement($1); }
+  : declaration { $$ = new ast::DeclarationStatement($1); setpos($$, &@$); }
 
 labeled_statement
-	: IDENTIFIER ':' statement { $$ = new ast::LabeledStatement(new ast::Identifier($1), $3); }
-	| CASE constant_expression ':' statement { $$ = new ast::CaseStatement($2, $4); }
-	| DEFAULT ':' statement { $$ = $3; }
+	: IDENTIFIER ':' statement { $$ = new ast::LabeledStatement(new ast::Identifier($1), $3); setpos($$, &@$); }
+	| CASE constant_expression ':' statement { $$ = new ast::CaseStatement($2, $4); setpos($$, &@$); }
+	| DEFAULT ':' statement { $$ = $3; setpos($$, &@$); }
 	;
 
 compound_statement 
-  : '{' block_item_list '}' { $$ = $2; }
-  | '{' '}' { $$ = new ast::BlockStatement(); }
+  : '{' block_item_list '}' { $$ = $2; setpos($$, &@$); }
+  | '{' '}' { $$ = new ast::BlockStatement(); setpos($$, &@$); }
   ;
 
 block_item_list 
-  : statement                  { $$ = new ast::BlockStatement(); $$->push_back($1); }
-  | block_item_list statement  { $1->push_back($2); $$ = $1; }
+  : statement                  { $$ = new ast::BlockStatement(); $$->push_back($1); setpos($$, &@$); }
+  | block_item_list statement  { $1->push_back($2); $$ = $1; setpos($$, &@$); }
 
 expression_statement
-	: ';' { $$ = new ast::ExpressionStatement(nullptr); }
-	| expression ';' { $$ = new ast::ExpressionStatement($1); }
+	: ';' { $$ = new ast::ExpressionStatement(nullptr); setpos($$, &@$); }
+	| expression ';' { $$ = new ast::ExpressionStatement($1); setpos($$, &@$); }
 	;
 
 selection_statement
-	: IF '(' expression ')' statement ELSE statement { $$ = new ast::IfStatement($3, $5, $7); }
-	| IF '(' expression ')' statement { $$ = new ast::IfStatement($3, $5, nullptr); }
-	| SWITCH '(' expression ')' statement { $$ = new ast::SwitchStatement($3, $5); }
+	: IF '(' expression ')' statement ELSE statement { $$ = new ast::IfStatement($3, $5, $7); setpos($$, &@$); }
+	| IF '(' expression ')' statement { $$ = new ast::IfStatement($3, $5, nullptr); setpos($$, &@$); }
+	| SWITCH '(' expression ')' statement { $$ = new ast::SwitchStatement($3, $5); setpos($$, &@$); }
 	;
 
 iteration_statement
-	: WHILE '(' expression ')' statement { $$ = new ast::WhileStatement($3, $5); }
-	| DO statement WHILE '(' expression ')' ';' { $$ = new ast::DoWhileStatement($5, $2); }
+	: WHILE '(' expression ')' statement { $$ = new ast::WhileStatement($3, $5); setpos($$, &@$); }
+	| DO statement WHILE '(' expression ')' ';' { $$ = new ast::DoWhileStatement($5, $2); setpos($$, &@$); }
 	;
 
 jump_statement
-	: GOTO IDENTIFIER ';' { $$ = new ast::GotoStatement($2); }
-	| CONTINUE ';' { $$ = new ast::ContinueStatement(); }
-	| BREAK ';' { $$ = new ast::BreakStatement(); }
-	| RETURN ';' { $$ = new ast::ReturnStatement(nullptr); }
-	| RETURN expression ';' { $$ = new ast::ReturnStatement($2); }
+	: GOTO IDENTIFIER ';' { $$ = new ast::GotoStatement($2); setpos($$, &@$); }
+	| CONTINUE ';' { $$ = new ast::ContinueStatement(); setpos($$, &@$); }
+	| BREAK ';' { $$ = new ast::BreakStatement(); setpos($$, &@$); }
+	| RETURN ';' { $$ = new ast::ReturnStatement(nullptr); setpos($$, &@$); }
+	| RETURN expression ';' { $$ = new ast::ReturnStatement($2); setpos($$, &@$); }
 	;
 
 /* -Translation Unit and Functions------------------------------------------- */
@@ -414,24 +415,24 @@ jump_statement
 /* TODO function declarations without definitions*/
 
 translation_unit
-	: function_definition { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; }
-    | function_declaration { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; }
-	| declaration { $$ = new ast::TranslationUnit(); $$->add_declaration(new ast::DeclarationStatement($1)); *tu = *$$; }
-	| translation_unit function_definition { $1->add_function($2); $$ = $1; *tu = *$$; }
-    | translation_unit function_declaration { $1->add_function($2); $$ = $1; *tu = *$$; }
-	| translation_unit declaration { $1->add_declaration(new ast::DeclarationStatement($2)); $$ = $1; *tu = *$$; }
+	: function_definition { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; setpos($$, &@$); }
+    | function_declaration { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; setpos($$, &@$); }
+	| declaration { $$ = new ast::TranslationUnit(); $$->add_declaration(new ast::DeclarationStatement($1)); *tu = *$$; setpos($$, &@$); }
+	| translation_unit function_definition { $1->add_function($2); $$ = $1; *tu = *$$; setpos($$, &@$); }
+    | translation_unit function_declaration { $1->add_function($2); $$ = $1; *tu = *$$; setpos($$, &@$); }
+	| translation_unit declaration { $1->add_declaration(new ast::DeclarationStatement($2)); $$ = $1; *tu = *$$; setpos($$, &@$); }
 	;
 
 function_definition
-  : pure_declaration '(' function_parameter_list ')' compound_statement { $$ = new ast::Function($1, $3, $5); }
-  | pure_declaration '(' ')' compound_statement { $$ = new ast::Function($1, nullptr, $4); }
-  | pure_declaration '(' VOID ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); }
+  : pure_declaration '(' function_parameter_list ')' compound_statement { $$ = new ast::Function($1, $3, $5); setpos($$, &@$); }
+  | pure_declaration '(' ')' compound_statement { $$ = new ast::Function($1, nullptr, $4); setpos($$, &@$); }
+  | pure_declaration '(' VOID ')' compound_statement { $$ = new ast::Function($1, nullptr, $5); setpos($$, &@$); }
   ;
 
 function_declaration
-  : pure_declaration '(' function_parameter_list ')' ';' { $$ = new ast::Function($1, $3, nullptr); }
-  | pure_declaration '(' ')' ';' { $$ = new ast::Function($1, nullptr, nullptr); }
-  | pure_declaration '(' VOID ')' ';' { $$ = new ast::Function($1, nullptr, nullptr); }
+  : pure_declaration '(' function_parameter_list ')' ';' { $$ = new ast::Function($1, $3, nullptr); setpos($$, &@$); }
+  | pure_declaration '(' ')' ';' { $$ = new ast::Function($1, nullptr, nullptr); setpos($$, &@$); }
+  | pure_declaration '(' VOID ')' ';' { $$ = new ast::Function($1, nullptr, nullptr); setpos($$, &@$); }
   ;
 
 %%
@@ -441,4 +442,13 @@ void yyerror(ast::TranslationUnit* tu, const char *s)
 {
 	fflush(stdout);
 	fprintf(stderr, "*** %s\n", s);
+}
+
+
+void setpos(ast::Node *n, void* info_v) {
+    YYLTYPE info = *((YYLTYPE*)info_v);
+    n->pos.first_line = info.first_line;
+    n->pos.last_line = info.last_line;
+    n->pos.first_column = info.first_column;
+    n->pos.last_column = info.last_column;
 }

@@ -1,5 +1,6 @@
 #include "ast.hpp"
 #include "debug.hpp"
+#include "error.hpp"
 
 namespace ast {
 
@@ -142,7 +143,7 @@ void Declaration::scopify() {
   cdebug << "Declaration::scopify: " << endl;
   for (InitDeclarator *decl : *decl_list) {
     if (table->check_scope(decl->ident->name)) {
-      cout << "PANIC REDECLARATION\n";
+      ehdl::err("Redeclaration of variable " + decl->ident->name, decl->pos);
     }
     else {
       table->add_symbol(decl->ident->name, {-1, decl->ptr_depth, typespecs2st(decl_specs->type_specs)});
@@ -169,7 +170,7 @@ void BlockStatement::scopify() {
 void PureDeclaration::scopify() {
   cdebug << "PureDeclaration::scopify: " << endl;
   if (table->check_scope(ident->name)) {
-    cout << "PANIC REDECLARATION\n";
+    ehdl::err("Redeclaration of variable " + ident->name, pos);
   }
   else {
     table->add_symbol(ident->name, {-1, ptr_depth, typespecs2st(decl_specs->type_specs)});
@@ -188,18 +189,13 @@ void FunctionParameterList::scopify() {
 void Function::scopify() {
   std::string name = func_decl->ident->name;
   cdebug << "Function::scopify: " << name << endl;
-  if (false/*table->check_scope(name)*/) {                  //TODO removed redecl check
-    // cout << "PANIC REDECLARATION\n";
-  } else {
-    table->add_symbol(name, {-1, func_decl->ptr_depth, typespecs2st(func_decl->decl_specs->type_specs)});
-    cdebug<<"Function decl assigned type "<<typespecs2st(func_decl->decl_specs->type_specs)<<" ptr depth "<<func_decl->ptr_depth<<endl;
-    // table->add_symbol(name, {-1, 0, FUNC});
-    table->reset_symb_identifier();
-    table->enter_scope();
-    if (params) params->scopify();
-    if (stmts) stmts->scopify();
-    table->exit_scope();
-  }
+  table->add_symbol(name, {-1, func_decl->ptr_depth, typespecs2st(func_decl->decl_specs->type_specs)});
+  cdebug<<"Function decl assigned type "<<typespecs2st(func_decl->decl_specs->type_specs)<<" ptr depth "<<func_decl->ptr_depth<<endl;
+  table->reset_symb_identifier();
+  table->enter_scope();
+  if (params) params->scopify();
+  if (stmts) stmts->scopify();
+  table->exit_scope();
 }
 
 void TranslationUnit::scopify() {
