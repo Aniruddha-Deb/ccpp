@@ -1,16 +1,9 @@
+#include <stdio.h>
+
 int main() {
-    int a = 2;
-    int b = 3;
-    int c = 4;
+    int a[3] = {2, 3, 4};
+    int *b = a;
+    *(b++) += 100;
+    printf("%d %d %d %d\n", a[0], a[1], a[2], (int)(b-a)); 
     return 0;
-}
-
-struct A {
-    int a;
-    int b;
-}
-
-void copy_struct() {
-    struct A{5, 2};
-    struct B = A;
 }

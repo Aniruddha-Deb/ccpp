@@ -402,6 +402,22 @@ Expression* FoldConstants(Expression* expr){
 }
 
 Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* rhs) {
+  Identifier *ident;
+  if ((ident = dynamic_cast<Identifier*>(lhs))) {
+    // assignments can get constant folded because of this
+    switch(op) {
+      case OP_ADD_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_ADD,    rhs));
+      case OP_SUB_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_SUB,    rhs));
+      case OP_MUL_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_MUL,    rhs));
+      case OP_DIV_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_DIV,    rhs));
+      case OP_MOD_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_MOD,    rhs));
+      case OP_AND_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_AND,    rhs));
+      case OP_OR_ASSIGN:    return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_OR,     rhs));
+      case OP_XOR_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_XOR,    rhs));
+      case OP_LEFT_ASSIGN:  return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_LSHIFT, rhs));
+      case OP_RIGHT_ASSIGN: return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_RSHIFT, rhs));
+    }
+  }
   Literal *lhslit, *rhslit;
   if ((lhslit = dynamic_cast<Literal*>(lhs)) && (rhslit = dynamic_cast<Literal*>(rhs))) {
     widen_literals(lhslit, rhslit);

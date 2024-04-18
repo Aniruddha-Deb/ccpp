@@ -147,12 +147,12 @@ type_name
     : 
 
 postfix_expression
-    : primary_expression { $$ = $1; setpos($$, &@$); }
-    | postfix_expression '[' expression ']'
+    : primary_expression { $$ = $1; setpos($$, &@$); } // lvalue
+    | postfix_expression '[' expression ']' // lvalue, not handled
     | postfix_expression '(' ')' { $$ = new ast::FunctionInvocationExpression($1); setpos($$, &@$); }
     | postfix_expression '(' argument_expression_list ')' { $$ = new ast::FunctionInvocationExpression($1, $3); setpos($$, &@$); }
-    | postfix_expression '.' IDENTIFIER
-    | postfix_expression PTR_OP IDENTIFIER
+    | postfix_expression '.' IDENTIFIER // lvalue, not handled
+    | postfix_expression PTR_OP IDENTIFIER // lvalue, not handled
     | postfix_expression INC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_INCR, $1); setpos($$, &@$); }
     | postfix_expression DEC_OP { $$ = ast::allocateUnaryExpression(ast::OP_POST_DECR, $1); setpos($$, &@$); }
     ;
@@ -164,14 +164,14 @@ argument_expression_list
 
 unary_expression
     : postfix_expression { $$ = $1; setpos($$, &@$); }
-    | INC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_INCR, $2); setpos($$, &@$); }
-    | DEC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_DECR, $2); setpos($$, &@$); }
+    | INC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_INCR, $2); setpos($$, &@$); } // rvalue
+    | DEC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_DECR, $2); setpos($$, &@$); } // rvalue
     | unary_operator postfix_expression { $$ = ast::allocateUnaryExpression($1, $2); setpos($$, &@$); }
     ;
 
 unary_operator
     : '&' { $$ = ast::OP_AND; }
-    | '*' { $$ = ast::OP_DEREF; }
+    | '*' { $$ = ast::OP_DEREF; } // lvalue
     | '+' { $$ = ast::OP_UNARY_PLUS; }
     | '-' { $$ = ast::OP_UNARY_MINUS; }
     | '~' { $$ = ast::OP_NOT; }
@@ -411,8 +411,6 @@ jump_statement
 	;
 
 /* -Translation Unit and Functions------------------------------------------- */
-
-/* TODO function declarations without definitions*/
 
 translation_unit
 	: function_definition { $$ = new ast::TranslationUnit(); $$->add_function($1); *tu = *$$; setpos($$, &@$); }
