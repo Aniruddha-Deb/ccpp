@@ -102,17 +102,22 @@ Statement* ExpressionStatement::const_prop(){
 
 
 Statement* DeclarationStatement::const_prop(){
-    for(auto dec: *(decl->decl_list)){
-        if(dec->init_expr){
-            Expression* exp = dec->init_expr->const_prop();
+    for(int i = 0; i < (decl->decl_list)->size(); i++){
+        if((*(decl->decl_list))[i]->init_expr){
+             cout << "Const ";
+            Expression* exp = (*(decl->decl_list))[i]->init_expr->const_prop();
+             cout << "Const ";
             // delete old exp? 
             // dec->init_expr = exp;
-            dec->init_expr = FoldConstants(dec->init_expr);
-            if (dynamic_cast<Literal*> (dec->init_expr)){
+            
+            (*(decl->decl_list))[i]->init_expr = FoldConstants(exp);
+
+            cout<<"WHAT"<<endl;
+            if (dynamic_cast<Literal*> ((*(decl->decl_list))[i]->init_expr)){
                 cout << "Const ";
-                cout << dec->ident->ident_info.idx << endl;
+                cout << (*decl->decl_list)[i]->ident->ident_info.idx << endl;
             }
-            constant_table.update_value(dec->ident->ident_info.idx, dynamic_cast<Literal*> (dec->init_expr) );
+            constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, dynamic_cast<Literal*> ((*decl->decl_list)[i]->init_expr) );
         }
     }
     return this;
@@ -133,7 +138,11 @@ Statement* ReturnStatement::const_prop(){
 Expression* Identifier::const_prop(){
     if (constant_table.is_constant(ident_info.idx)){
         cout<<"Found constant"<<endl;
-        return LiteralCopy(constant_table.get_value(ident_info.idx));
+        Literal* l = dynamic_cast<Literal*>((constant_table.get_value(ident_info.idx))->copy_exp());
+        if(!l){
+            cout << "something is wrong" << endl;
+        }
+        return l;
     }
     return this;   // copy current exp and return so old version can be deleted
 }
@@ -142,6 +151,9 @@ Expression* BinaryExpression::const_prop(){
     if (op == OP_ASSIGN) {
         Expression* newrhs = rhs->const_prop();
         rhs = FoldConstants(newrhs);
+        // if (rhs->const_value) {
+        //     const_value = rhs->const_value;
+        // }
         // rhs = newrhs;
         Identifier* ident = dynamic_cast<Identifier*> (lhs);
         if (ident) {

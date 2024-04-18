@@ -19,8 +19,15 @@ int main(){
 
     // return w + z + x + y;
 
-    int a,b,c,d,e,f,g,h;
-
-    a = (a + 1) + (b + 2) + (a = a + (b = (c + 9))) + (e = f = g = (c = (d = 7))) + d;
+    int a = 3,b = a,c = a + b,d,e = a + b * c / a,f = e * e,g,h;
+ 
+    // a = (a + 1) + (b + 2) + (a = a + (b = (c + 9))) + (e = f = g = (c = (d = 7))) + d;
+    a = 4;
+    a = a + 2;
+    a+=2;
+    a+=b;
+    e += a + b + c;
+    b = (a = 2 + 3) + (b = a = a + 1);
+    c = a + b;
     // a = a + (a = a + 1);
 }

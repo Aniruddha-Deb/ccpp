@@ -47,6 +47,7 @@ bool ConstTable::is_constant(int idx){
             return false;
         }
         if (value_map[idx].Value){
+            cout<<"FOUND\n";
             return true;
         }
     }

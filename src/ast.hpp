@@ -162,12 +162,14 @@ struct ExprTypeInfo{
 struct Expression : Node {
   virtual ~Expression() {}
   ExprTypeInfo type_info;
+  Expression* const_value = nullptr;
   virtual llvm::Value* codegen();                      // codegen when rvalue
   // virtual llvm::Value* assign(Expression* R);         // codegen when lvalue
   virtual Expression* flatten_tree(Statement*);
   virtual Expression* const_prop();
   virtual llvm::Value* get_address();                                // use this to replace assign          
   virtual Expression* copy_exp();     
+
 };
 
 struct Identifier : Expression {
