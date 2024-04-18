@@ -61,31 +61,42 @@ Statement* WhileStatement::const_prop(){
 }
 
 Statement* ExpressionStatement::const_prop(){
-    BlockStatement* b = new BlockStatement();
-    if (BinaryExpression* binexp = dynamic_cast<BinaryExpression*> (expr)){
-        if (binexp->op == OP_ASSIGN) {
-            expr = expr->flatten_tree(b);
-        }
-        else{
-            expr = expr->flatten_tree(b);
-            b->push_back(this);
-        }
-    }
-    else {
-        expr = expr->flatten_tree(b);
-        b->push_back(this);
-    }
+    // BlockStatement* b = new BlockStatement();
+    // if (BinaryExpression* binexp = dynamic_cast<BinaryExpression*> (expr)){
+    //     if (binexp->op == OP_ASSIGN) {
+    //         expr = expr->flatten_tree(b);
+    //     }
+    //     else{
+    //         expr = expr->flatten_tree(b);
+    //         b->push_back(this);
+    //     }
+    // }
+    // else {
+    //     expr = expr->flatten_tree(b);
+    //     b->push_back(this);
+    // }
 
-    for(auto itr: *b){
-        ExpressionStatement* es = dynamic_cast<ExpressionStatement*>(itr);
-        es->expr = es->expr->const_prop();
-        es->expr = FoldConstants(es->expr);
-        cout << "set" << endl;
-    }
-    // Expression* exp = expr->const_prop();  // delete old exp?
+    // // cout << b->dump_ast("") << endl;
+
+    // for(int i = 0; i < (b->size())/2; i++){
+    //     Statement* temp = (*b)[i];
+    //     (*b)[i] = (*b)[b->size() - i - 1]; 
+    //     (*b)[b->size() - i - 1] = temp;
+    // }
+
+    // for(int i = 0; i < b->size(); i++){
+    //     ExpressionStatement* es = dynamic_cast<ExpressionStatement*>((*b)[i]);
+    //     es->expr = es->expr->const_prop();
+    //     es->expr = FoldConstants(es->expr);
+    //     cout << "set" << endl;
+    // }
+
     
-    // expr = exp;
-    return b;
+    expr = expr->const_prop();  // delete old exp?
+    
+    expr = FoldConstants(expr);
+
+    return this;
 }
 
 
@@ -236,8 +247,8 @@ Expression* FunctionInvocationExpression::flatten_tree(Statement* b){
     fn = fn->flatten_tree(b);
 
     if(params){
-        for(auto itr: *params){
-            itr = itr->flatten_tree(b);
+        for(int i = params->size() - 1; i >= 0; i --){
+            (*params)[i] = (*params)[i]->flatten_tree(b);
         }
     }
 
@@ -246,16 +257,17 @@ Expression* FunctionInvocationExpression::flatten_tree(Statement* b){
 
 Expression* BinaryExpression::flatten_tree(Statement* b){
     // if (left_assoc_op)
-    if (OP_ASSIGN) {
+    if (op == OP_ASSIGN) {
         BlockStatement* bs = dynamic_cast<BlockStatement*>(b);
-        rhs = rhs->flatten_tree(b);
         lhs = lhs->flatten_tree(b);
+        rhs = rhs->flatten_tree(b);
         bs->push_back(new ExpressionStatement(this));
+        // cout << dump_ast("") << endl;
         return rhs->copy_exp();
     }
     else{
-        lhs = lhs->flatten_tree(b);
         rhs = rhs->flatten_tree(b);
+        lhs = lhs->flatten_tree(b);
         return this;
     }
 }

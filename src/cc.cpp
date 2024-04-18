@@ -36,6 +36,11 @@ main(int argc, char **argv)
   std::cout << "Done scopifying" << std::endl;
   std::cout << tu->dump_ast("") << std::endl;
 
+  if (ehdl::n_errs() > 0) {
+    ehdl::print_errs();
+    exit(0);
+  }
+
   tu->const_prop();
 
   std::cout << "Done optimizing" << std::endl;
@@ -43,10 +48,7 @@ main(int argc, char **argv)
 
   // printf("retv = %d\n", ret);
 
-  // if (ehdl::n_errs() > 0) {
-  //   ehdl::print_errs();
-  //   exit(0);
-  // }
+
   // tu->codegen();
   exit(0);
 }

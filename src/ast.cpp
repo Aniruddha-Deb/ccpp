@@ -708,6 +708,7 @@ Expression* UnaryExpression::copy_exp(){
     newexp->expr = expr->copy_exp();
     newexp->op = op;
     newexp->type_info = type_info;
+    return newexp;
   }
   return nullptr;
 }
@@ -719,6 +720,7 @@ Expression* BinaryExpression::copy_exp(){
     newexp->rhs = rhs->copy_exp();
     newexp->op = op;
     newexp->type_info = type_info;
+    return newexp;
   }
   return nullptr;
 }
@@ -740,6 +742,7 @@ Expression* FunctionInvocationExpression::copy_exp(){
     newexp->params = nullptr;
   }
 
+  return newexp;
 
 }
 
