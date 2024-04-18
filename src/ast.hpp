@@ -134,6 +134,13 @@ struct Node {
   virtual void scopify() = 0;
 };
 
+struct Statement : Node {
+  virtual llvm::Value* codegen();
+  virtual Statement* const_prop();              // moved decl of statement
+  virtual ~Statement() {}
+};
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Expressions
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,7 +155,10 @@ struct Expression : Node {
   ExprTypeInfo type_info;
   virtual llvm::Value* codegen();                      // codegen when rvalue
   // virtual llvm::Value* assign(Expression* R);         // codegen when lvalue
-  virtual llvm::Value* get_address();                                // use this to replace assign               
+  virtual Expression* flatten_tree(Statement*);
+  virtual Expression* const_prop();
+  virtual llvm::Value* get_address();                                // use this to replace assign          
+  virtual Expression* copy_exp();     
 };
 
 struct Identifier : Expression {
@@ -156,12 +166,16 @@ struct Identifier : Expression {
   SymbolInfo ident_info;
 
   Identifier(string _name);
+  Expression* copy_exp() override;
   string dump_ast(string prefix) override;
   llvm::Value* codegen() override;
-  // llvm::Value* assign(Expression* R) override;
+  Expression* flatten_tree(Statement*) override;
+  Expression* const_prop() override;
   llvm::Value* get_address() override;
   void scopify() override;
 };
+
+Expression* FoldConstants(Expression* expr);
 
 struct TernaryExpression : Expression {
   Expression *cond;
@@ -186,6 +200,9 @@ struct FunctionInvocationExpression : Expression {
 
   string dump_ast(string prefix) override;
   llvm::Value* codegen() override;
+  Expression* const_prop() override;
+  Expression* flatten_tree(Statement*) override;
+  Expression* copy_exp() override;
   void scopify() override;
   ~FunctionInvocationExpression();
 };
@@ -198,7 +215,10 @@ struct BinaryExpression : Expression {
   BinaryExpression(Expression *_lhs, Operator _op, Expression *_rhs);
   string dump_ast(string prefix) override;
   void scopify() override;
+  Expression* const_prop() override;
+  Expression* flatten_tree(Statement*) override;
   llvm::Value* codegen() override;
+  Expression* copy_exp() override;
   ~BinaryExpression();
 };
 
@@ -209,7 +229,10 @@ struct UnaryExpression : Expression {
   UnaryExpression(Operator _op, Expression *_expr);
   llvm::Value* codegen() override;
   llvm::Value* get_address() override;
+  Expression* const_prop() override;
+  Expression* flatten_tree(Statement*) override;
   string dump_ast(string prefix) override;                      // Add assign method
+  Expression* copy_exp() override;
   void scopify() override;
 };
 
@@ -228,7 +251,10 @@ struct Literal : Expression {
   Literal(float data, LiteralType _ltype);
   Literal(double data, LiteralType _ltype);
   void scopify() override;
+  Expression* const_prop() override;
+  Expression* flatten_tree(Statement*) override;
   llvm::Constant* codegen() override;
+  Expression* copy_exp() override;
   string dump_ast(string prefix) override;
 };
 
@@ -308,10 +334,11 @@ struct Declaration : Node {
 // Statements
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Statement : Node {
-  virtual llvm::Value* codegen();
-  virtual ~Statement() {}
-};
+// struct Statement : Node {
+//   virtual llvm::Value* codegen();
+//   virtual Statement* const_prop();
+//   virtual ~Statement() {}
+// };
 
 struct DeclarationStatement : Statement {
   Declaration *decl;
@@ -320,6 +347,7 @@ struct DeclarationStatement : Statement {
   string dump_ast(string prefix) override;
   void scopify() override;
   llvm::Value* codegen() override;
+  Statement* const_prop() override;
   llvm::Value* globalgen();
   ~DeclarationStatement();
 };
@@ -330,6 +358,7 @@ struct ExpressionStatement : Statement {
   ExpressionStatement(Expression *_expr);
   string dump_ast(string prefix) override;
   void scopify() override;
+  Statement* const_prop() override;
   llvm::Value* codegen() override;
   ~ExpressionStatement();
 };
@@ -344,6 +373,7 @@ struct IfStatement : Statement {
               Statement *_false_branch);
   string dump_ast(string prefix) override;
   void scopify() override;
+  Statement* const_prop() override;
   llvm::Value* codegen() override;
   ~IfStatement();
 };
@@ -368,6 +398,7 @@ struct WhileStatement : Statement {
   WhileStatement(Expression *_cond, Statement *_stmt);
   string dump_ast(string prefix) override;
   void scopify() override;
+  Statement* const_prop() override;
   llvm::Value* codegen() override;
   ~WhileStatement();
 };
@@ -391,6 +422,7 @@ struct ReturnStatement : Statement {
   ReturnStatement(Expression *_ret_expr);
   string dump_ast(string prefix) override;
   void scopify() override;
+  Statement* const_prop() override;
   llvm::Value* codegen() override;
   ~ReturnStatement();
 };
@@ -420,7 +452,7 @@ struct BlockStatement : Statement, vector<Statement *> {
 
   string dump_ast(string prefix) override;
   void scopify() override;
-
+  Statement* const_prop() override;
   llvm::Value* codegen() override;
   ~BlockStatement();
 };
@@ -462,6 +494,7 @@ struct Function : Node {
   Function(PureDeclaration* _func_decl, FunctionParameterList* _params, BlockStatement* _stmts);
   string dump_ast(string prefix);
   void scopify();
+  void const_prop();
   llvm::Function* codegen(); 
   ~Function();
 };
@@ -478,6 +511,7 @@ struct TranslationUnit : Node {
   string dump_ast(string prefix);
   void scopify();
   void codegen();
+  void const_prop();
   ~TranslationUnit();
 };
 } // namespace ast

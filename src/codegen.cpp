@@ -459,6 +459,8 @@ Value *BinaryExpression::codegen() {
   if (!L || !R)
     return nullptr;
 
+  // handle integer + pointer
+
   if(lhs->type_info.st.stype != rhs->type_info.st.stype || lhs->type_info.st.ptr_depth != rhs->type_info.st.ptr_depth || lhs->type_info.st.ptr_depth != 0){
     cout<<"Type mismatch"<<endl;
     return nullptr;

@@ -34,7 +34,12 @@ main(int argc, char **argv)
   std::cout << "Done scopifying" << std::endl;
   std::cout << tu->dump_ast("") << std::endl;
 
+  tu->const_prop();
+
+  std::cout << "Done optimizing" << std::endl;
+  std::cout << tu->dump_ast("") << std::endl;
+
   // printf("retv = %d\n", ret);
-  tu->codegen();
+  // tu->codegen();
   exit(0);
 }

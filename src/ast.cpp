@@ -383,6 +383,21 @@ Literal* div_literals(Literal* lhs, Literal* rhs) {
   return new Literal((long)(lhs->data.l / rhs->data.l), lhs->ltype);
 }
 
+Expression* FoldConstants(Expression* expr){
+  BinaryExpression* bin_exp;
+  UnaryExpression* un_exp;
+  if (bin_exp = dynamic_cast<BinaryExpression*>(expr)) {
+    cout << "binary expression" << endl;
+    Expression* result = allocateBinaryExpression(FoldConstants(bin_exp->lhs), bin_exp->op, FoldConstants(bin_exp->rhs));
+    return result;
+  }
+  else if(un_exp = dynamic_cast<UnaryExpression*>(expr)){
+    Expression* result = allocateUnaryExpression(un_exp->op, FoldConstants(un_exp->expr));
+    return result;
+  }
+  return expr;
+}
+
 Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* rhs) {
   Literal *lhslit, *rhslit;
   if ((lhslit = dynamic_cast<Literal*>(lhs)) && (rhslit = dynamic_cast<Literal*>(rhs))) {
@@ -653,4 +668,76 @@ TranslationUnit::~TranslationUnit() {
     }
     delete nodes;
 }
+
+
+//copy
+
+Expression* Expression::copy_exp(){
+  cout << "virtual copyexp" << endl;
+  return nullptr;
+}
+
+Expression* Identifier::copy_exp(){
+  Identifier* newexp = new Identifier("");
+  if (true) {
+    newexp->ident_info = ident_info;
+    newexp->name = name;
+    newexp->type_info = type_info;
+    return newexp;
+  }
+  return nullptr;
+}
+
+Expression* Literal::copy_exp(){
+  Literal* newexp = new Literal("", LT_CHAR);
+  if (true) {
+    newexp->data = data;
+    newexp->ltype = ltype;
+    newexp->type_info = type_info;
+    newexp->value = value;
+    return newexp;
+  }
+}
+
+Expression* UnaryExpression::copy_exp(){
+  UnaryExpression* newexp = new UnaryExpression(OP_ADD, nullptr);
+  if (true) {
+    newexp->expr = expr->copy_exp();
+    newexp->op = op;
+    newexp->type_info = type_info;
+  }
+  return nullptr;
+}
+
+Expression* BinaryExpression::copy_exp(){
+  BinaryExpression* newexp = new BinaryExpression(lhs, op, rhs);
+  if (true) {
+    newexp->lhs = lhs->copy_exp();
+    newexp->rhs = rhs->copy_exp();
+    newexp->op = op;
+    newexp->type_info = type_info;
+  }
+  return nullptr;
+}
+
+
+Expression* FunctionInvocationExpression::copy_exp(){
+  FunctionInvocationExpression* newexp = new FunctionInvocationExpression(this);
+
+  newexp->fn = fn->copy_exp();
+  newexp->type_info = type_info;
+
+  if (params) {
+    newexp->params = new vector<Expression*>;
+    for(auto itr: *params){
+      newexp->params->push_back(itr->copy_exp());
+    }
+  }
+  else{
+    newexp->params = nullptr;
+  }
+
+
+}
+
 } // namespace ast

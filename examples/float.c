@@ -1,6 +1,12 @@
-#include <stdio.h>
+char* malloc(int size);
+
+int printf(char *format, ...);
 
 int main() {
-    double x = 0x.FP-1f;
+    char *c;
+    char* d = "hello world\n";
+    *c = *d;
+    (d + 1);
+    printf(c);
     return 0;
 }
