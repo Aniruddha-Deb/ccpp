@@ -6,26 +6,32 @@
 #include "error.hpp"
 #include "c.tab.hpp"
 #include "symtab.hpp"
+#include "argparse.hpp"
 
-// extern "C" int yylex();
-// int yyparse(void* tu);
 extern "C" FILE *yyin;
 
-static void usage()
-{
-  printf("Usage: cc <prog.c>\n");
-}
+int main(int argc, char **argv) {
 
-int
-main(int argc, char **argv)
-{
-  if (argc != 2) {
-    usage();
-    exit(1);
+  argparse::ArgumentParser ccpp("ccpp", "1.0");
+
+  ccpp.add_argument("source").help("Source file to compile");
+  if (argc == 1) {
+    std::cerr << ccpp;
+    return 0;
   }
-  char const *filename = argv[1];
+
+  try {
+    ccpp.parse_args(argc, argv);
+  }
+  catch (const std::exception& err) {
+    std::cerr << err.what() << std::endl;
+    std::cerr << ccpp;
+    return 0;
+  }
+
+  string filename = ccpp.get("source");
   ehdl::set_filename(filename);
-  yyin = fopen(filename, "r");
+  yyin = fopen(filename.c_str(), "r");
   assert(yyin);
   ast::TranslationUnit* tu = new ast::TranslationUnit();
   int ret = yyparse(tu);
@@ -49,6 +55,6 @@ main(int argc, char **argv)
   // printf("retv = %d\n", ret);
 
 
-  // tu->codegen();
+  tu->codegen();
   exit(0);
 }
