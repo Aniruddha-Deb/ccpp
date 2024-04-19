@@ -2,6 +2,7 @@
 #include "debug.hpp"
 #include "error.hpp"
 #include <cmath>
+#include <sstream>
 
 #define I32_MOD (1ULL<<32)
 
@@ -311,6 +312,19 @@ void parse_float_literal(Literal* literal) {
   }
 }
 
+void parse_string_literal(Literal *literal) {
+  string value = literal->value.substr(1, literal->value.size()-2);
+  stringstream val_parsed;
+  for (int i=0; i<value.size(); i++) {
+    if (value[i] == '\\') {
+      // escape seq
+      val_parsed << get_esc_char(value[++i]);
+    }
+    else val_parsed << value[i];
+  }
+  literal->value = val_parsed.str();
+}
+
 Literal::Literal(string _value, LiteralType _ltype)
     : value(_value), ltype(_ltype), data{0} {
   cdebug << "Literal constructor called with value: " << _value << endl;
@@ -323,6 +337,9 @@ Literal::Literal(string _value, LiteralType _ltype)
       break;
     case LT_FLOAT_LIKE:
       parse_float_literal(this);
+      break;
+    case LT_STRING:
+      parse_string_literal(this);
       break;
   }
 }

@@ -521,7 +521,7 @@ struct TranslationUnit : Node {
 
   string dump_ast(string prefix);
   void scopify();
-  void codegen();
+  string codegen();
   void const_prop();
   ~TranslationUnit();
 };

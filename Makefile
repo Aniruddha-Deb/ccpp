@@ -13,10 +13,10 @@ endif
 
 DEBUG=#-DDEBUG
 
-SRC=src/ccpp.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp src/codegen.cpp src/scopify.cpp src/error.cpp src/consttab.cpp src/optim.cpp
+SRC=src/cc.cpp src/c.tab.cpp src/c.lex.cpp src/ast.cpp src/symtab.cpp src/dump_ast.cpp src/codegen.cpp src/scopify.cpp src/error.cpp src/consttab.cpp src/optim.cpp
 OBJ=$(patsubst src/%.cpp, bin/%.o, $(SRC))
 
-bin/ccpp: src/c.tab.cpp src/c.lex.cpp $(OBJ)
+cc: src/c.tab.cpp src/c.lex.cpp $(OBJ)
 	$(CC) -std=c++17 $(OBJ) $(INCLUDE) $(LDFLAGS) $(DEBUG) -o $@
 
 test_literal: bin/test_literal.o bin/ast.o bin/dump_ast.o bin/codegen.o bin/scopify.o bin/symtab.o

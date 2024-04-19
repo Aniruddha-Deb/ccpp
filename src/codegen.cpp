@@ -12,6 +12,7 @@
 #include <map>
 #include "ast.hpp"
 #include "debug.hpp"
+#include <sstream>
 
 int intLiteralToInt(string &s){
   return stoi(s);
@@ -330,7 +331,7 @@ llvm::Value* Declaration::globalgen(){
   return A;
 }
 
-void TranslationUnit::codegen() {
+std::string TranslationUnit::codegen() {
   llvm_ctx = std::make_unique<llvm::LLVMContext>();
   llvm_mod = std::make_unique<llvm::Module>("Code Generator", *llvm_ctx);
 
@@ -358,7 +359,11 @@ void TranslationUnit::codegen() {
     }
   }
 
-   llvm_mod->print(errs(), nullptr);
+  std::string str;
+  raw_string_ostream os(str);
+  os << *llvm_mod;
+  os.flush();
+  return os.str();
 }
 
 Value* Expression::codegen(){
@@ -404,37 +409,15 @@ Constant* Literal::codegen() {
     case LT_DOUBLE:
       type_info.st.stype = FP64;
       return ConstantFP::get(llvm::Type::getDoubleTy(*llvm_ctx), APFloat(data.d));
-
-        case LT_INT_LIKE:
-          cout << "ERROR: should have parsed int_like by now" << endl;
-        case LT_FLOAT_LIKE:
-          cout << "ERROR: should have parsed float_like by now" << endl;
-        case LT_STRING:
-            // stringVar = new llvm::GlobalVariable(
-            //     *llvm_mod,
-            //     stringType,
-            //     true, // Constant (readonly)
-            //     llvm::GlobalValue::PrivateLinkage,
-            //     stringLiteral,
-            //     ".str"  // Name of the string literal
-            // );
-          // stringLiteral  = llvm::ConstantDataArray::getString(*llvm_ctx, stringLiteraltoString(value), true);
-          return llvm_builder->CreateGlobalStringPtr(StringRef(value), ".str");
-            // stringType = llvm::ArrayType::get(
-            //     llvm_builder->getInt8Ty(),
-            //     stringLiteraltoString(value).length() + 1
-            // );
-
-
-            // values.push_back(
-            //   llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), zero));
-            // values.push_back(
-            // llvm::Constant::getIntegerValue(llvm::Type::getInt32Ty(*llvm_ctx), one));
-
-            // return llvm_builder->CreateGEP( stringVar->getValueType(),stringVar, values);
-        default:
-            cout<<"invalid literal"<<endl;
-            return nullptr;
+    case LT_INT_LIKE:
+      cout << "ERROR: should have parsed int_like by now" << endl;
+    case LT_FLOAT_LIKE:
+      cout << "ERROR: should have parsed float_like by now" << endl;
+    case LT_STRING:
+      return llvm_builder->CreateGlobalStringPtr(value, ".str");
+    default:
+      cout<<"invalid literal"<<endl;
+      return nullptr;
   }
 }
 
