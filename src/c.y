@@ -143,9 +143,6 @@ string
     : STRING_LITERAL { $$ = new ast::Literal($1, ast::LT_STRING); setpos($$, &@$); }
     ;
 
-type_name
-    : 
-
 postfix_expression
     : primary_expression { $$ = $1; setpos($$, &@$); } // lvalue
     | postfix_expression '[' expression ']' // lvalue, not handled
@@ -166,7 +163,7 @@ unary_expression
     : postfix_expression { $$ = $1; setpos($$, &@$); }
     | INC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_INCR, $2); setpos($$, &@$); } // rvalue
     | DEC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_DECR, $2); setpos($$, &@$); } // rvalue
-    | unary_operator postfix_expression { $$ = ast::allocateUnaryExpression($1, $2); setpos($$, &@$); }
+    | unary_operator unary_expression { $$ = ast::allocateUnaryExpression($1, $2); setpos($$, &@$); }
     ;
 
 unary_operator
@@ -301,7 +298,7 @@ init_declarator
 	;
 
 pointer_list
-  : '*' pointer_list { $$ = $2 + 1; }
+  : '*' pointer_list { $$ = $2 + 1; cout << "Got longer pointer list" << endl; }
   | '*' { $$ = 1; }
   ;
 

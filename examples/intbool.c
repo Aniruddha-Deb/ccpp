@@ -1,4 +1,4 @@
-#include <stdio.h>
+int printf(const char* fmt, ...);
 
 int main() {
     int a = 2, b = 5;

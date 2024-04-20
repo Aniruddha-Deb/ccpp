@@ -1,12 +1,11 @@
-int foo(int a, int b, int c, ...);
-
-int bar(){
-    return 0;
-}
-
+int printf(const char * format, ...);
 
 int main(){
-    char* c, d = "hello";
-    foo(1, 2, 3, 4);
+    char *c = "Hello";
+    char *d = "World";
+    char *e = "Multiple";
+    char *f = "String";
+    char *g = "Literals";
+    printf("%s %s %s %s %s\n", c, d, e, f, g);
     return 0;
 }

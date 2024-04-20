@@ -1,12 +1,9 @@
-char* malloc(int size);
-
-int printf(char *format, ...);
+int printf(const char* fmt, ...);
 
 int main() {
-    char *c;
-    char* d = "hello world\n";
-    *c = *d;
-    (d + 1);
-    printf(c);
+    float f = 5.f;
+    printf("%f\n", f);
+    printf("%f\n", f/0.f);
+    printf("%f\n", 0.f/0.f);
     return 0;
 }

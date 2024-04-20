@@ -4,7 +4,7 @@ int glob = 2 * 3;
 
 int main() {
     
-    glob = 5;
+    glob = 3;
     printf("%d\n", glob);
 
     return 0;

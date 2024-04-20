@@ -1,6 +1,7 @@
 int printf(const char* fmt, ...);
 
 int main() {
-    printf("%f\n", 5.f+(2+'c'));
+    _Bool a = 1, b = 1;
+    printf("%d\n", a+b);
     return 0;
 }

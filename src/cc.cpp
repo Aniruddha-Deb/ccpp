@@ -39,7 +39,11 @@ int main(int argc, char **argv) {
   ast::TranslationUnit* tu = new ast::TranslationUnit();
   int ret = yyparse(tu);
 
-  // TODO check if ret != 0
+  if (ret != 0) {
+    cout << "Error: parse error. Not proceeding with further steps" << endl;
+    delete tu;
+    return 0;
+  }
 
   tu->scopify();
 
