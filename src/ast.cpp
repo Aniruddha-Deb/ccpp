@@ -228,9 +228,9 @@ void parse_int_literal(Literal* literal) {
     // we don't handle unicode sequences
     if (value[i] == '\\') {
       i++;
-      literal->data.l = get_esc_char(value[i]);
+      literal->data.c = get_esc_char(value[i]);
     }
-    else literal->data.l = value[i];
+    else literal->data.c = value[i];
     literal->ltype = LT_CHAR;
     return;
   }
@@ -355,50 +355,69 @@ Literal::Literal(double _data, LiteralType _ltype) :
 
 int get_rank(LiteralType ltype) {
   if (ltype == LT_CHAR) return 1;
-  if (ltype == LT_INT32 || ltype == LT_UINT32) return 1;
-  if (ltype == LT_INT64 || ltype == LT_UINT64) return 2;
-  if (ltype == LT_FLOAT) return 3;
-  if (ltype == LT_DOUBLE) return 4;
+  if (ltype == LT_INT32 || ltype == LT_UINT32) return 2;
+  if (ltype == LT_INT64 || ltype == LT_UINT64) return 3;
+  if (ltype == LT_FLOAT) return 4;
+  if (ltype == LT_DOUBLE) return 5;
   return -1;
 }
 
 void widen_literals(Literal* lhslit, Literal* rhslit) {
-  switch (rhslit->ltype) {
-    case LT_DOUBLE: lhslit->data.d = double(lhslit->data.l); break;
-    case LT_FLOAT: lhslit->data.f = float(lhslit->data.l); break;
+  if (get_rank(rhslit->ltype) > get_rank(lhslit->ltype)) {
+    switch (rhslit->ltype) {
+      case LT_DOUBLE: lhslit->data.d = double(lhslit->data.l); break;
+      case LT_FLOAT: lhslit->data.f = float(lhslit->data.l); break;
+    }
+    lhslit->ltype = rhslit->ltype;
   }
-
-  if (get_rank(rhslit->ltype) > get_rank(lhslit->ltype)) lhslit->ltype = rhslit->ltype;
-  else if (get_rank(lhslit->ltype) > get_rank(rhslit->ltype)) rhslit->ltype = lhslit->ltype;
+  else if (get_rank(lhslit->ltype) > get_rank(rhslit->ltype)) {
+    switch (lhslit->ltype) {
+      case LT_DOUBLE: rhslit->data.d = double(rhslit->data.l); break;
+      case LT_FLOAT: rhslit->data.f = float(rhslit->data.l); break;
+    }
+    rhslit->ltype = lhslit->ltype;
+  }
 }
 
-Literal* add_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i + rhs->data.i), lhs->ltype);
-  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f + rhs->data.f, LT_FLOAT);
-  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d + rhs->data.d, LT_DOUBLE);
-  return new Literal((long)(lhs->data.l + rhs->data.l), lhs->ltype);
+void add_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_CHAR) lhs->data.c += rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i += rhs->data.i;
+  else if (lhs->ltype == LT_FLOAT) lhs->data.f += rhs->data.f;
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d += rhs->data.d;
+  else lhs->data.l += rhs->data.l;
 }
 
-Literal* sub_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i - rhs->data.i), lhs->ltype);
-  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f - rhs->data.f, LT_FLOAT);
-  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d - rhs->data.d, LT_DOUBLE);
-  return new Literal((long)(lhs->data.l - rhs->data.l), lhs->ltype);
+void sub_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_CHAR) lhs->data.c -= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i -= rhs->data.i;
+  else if (lhs->ltype == LT_FLOAT) lhs->data.f -= rhs->data.f;
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d -= rhs->data.d;
+  else lhs->data.l -= rhs->data.l;
 }
 
-Literal* mul_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i * rhs->data.i), lhs->ltype);
-  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f * rhs->data.f, LT_FLOAT);
-  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d * rhs->data.d, LT_DOUBLE);
-  return new Literal((long)(lhs->data.l * rhs->data.l), lhs->ltype);
+void mul_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_CHAR) lhs->data.c *= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i *= rhs->data.i;
+  else if (lhs->ltype == LT_FLOAT) lhs->data.f *= rhs->data.f;
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d *= rhs->data.d;
+  else lhs->data.l *= rhs->data.l;
 }
 
 // Udiv different from sdiv?
-Literal* div_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) return new Literal(long(lhs->data.i / rhs->data.i), lhs->ltype);
-  if (lhs->ltype == LT_FLOAT) return new Literal(lhs->data.f / rhs->data.f, LT_FLOAT);
-  if (lhs->ltype == LT_DOUBLE) return new Literal(lhs->data.d / rhs->data.d, LT_DOUBLE);
-  return new Literal((long)(lhs->data.l / rhs->data.l), lhs->ltype);
+void div_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_CHAR) lhs->data.c /= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i /= rhs->data.i;
+  else if (lhs->ltype == LT_FLOAT) lhs->data.f /= rhs->data.f;
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d /= rhs->data.d;
+  else lhs->data.l /= rhs->data.l;
+}
+
+void negate_literal_value(Literal* l) {
+  if (l->ltype == LT_CHAR) l->data.i *= -1;
+  else if (l->ltype == LT_INT32 || l->ltype == LT_UINT32) l->data.i *= -1;
+  else if (l->ltype == LT_FLOAT) l->data.f *= -1;
+  else if (l->ltype == LT_DOUBLE) l->data.d *= -1;
+  else l->data.l *= -1;
 }
 
 // TODO add more operators (bitwise, relational, logical and unary)
@@ -406,13 +425,13 @@ Literal* div_literals(Literal* lhs, Literal* rhs) {
 Expression* FoldConstants(Expression* expr){
   BinaryExpression* bin_exp;
   UnaryExpression* un_exp;
-  if (bin_exp = dynamic_cast<BinaryExpression*>(expr)) {
-    cout << "binary expression" << endl;
+  if ((bin_exp = dynamic_cast<BinaryExpression*>(expr))) {
+    // cout << "binary expression" << endl;
     Expression* result = allocateBinaryExpression(FoldConstants(bin_exp->lhs), bin_exp->op, FoldConstants(bin_exp->rhs));
     return result;
   }
-  else if(un_exp = dynamic_cast<UnaryExpression*>(expr)){
-    cout << "unary expression" << endl;
+  else if((un_exp = dynamic_cast<UnaryExpression*>(expr))){
+    // cout << "unary expression" << endl;
     Expression* result = allocateUnaryExpression(un_exp->op, FoldConstants(un_exp->expr));
     return result;
   }
@@ -441,28 +460,39 @@ Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* r
     widen_literals(lhslit, rhslit);
     Expression *expr;
     switch(op) {
-      case OP_ADD: expr = add_literals(lhslit, rhslit); break;
-      case OP_SUB: expr = sub_literals(lhslit, rhslit); break;
-      case OP_MUL: expr = mul_literals(lhslit, rhslit); break;
-      case OP_DIV: expr = div_literals(lhslit, rhslit); break;
+      case OP_ADD: add_literals(lhslit, rhslit); break;
+      case OP_SUB: sub_literals(lhslit, rhslit); break;
+      case OP_MUL: mul_literals(lhslit, rhslit); break;
+      case OP_DIV: div_literals(lhslit, rhslit); break;
       default: return new BinaryExpression(lhslit, op, rhslit);
     }
-    delete lhs;
     delete rhs;
-    return expr;
+    return lhs;
   }
   return new BinaryExpression(lhs, op, rhs);
+}
+
+Expression* allocateUnaryExpression(Operator op, Expression* expr) {
+  Literal *lit;
+  if ((lit = dynamic_cast<Literal*>(expr))) {
+    switch(op) {
+      case OP_UNARY_PLUS: return lit;
+      case OP_UNARY_MINUS: negate_literal_value(lit); return lit;
+      default: return new UnaryExpression(op, expr);
+    }
+  }
+  return new UnaryExpression(op, expr);
 }
 
 Expression* FoldConstants2(Expression* expr){
   BinaryExpression* bin_exp;
   UnaryExpression* un_exp;
-  if (bin_exp = dynamic_cast<BinaryExpression*>(expr)) {
+  if ((bin_exp = dynamic_cast<BinaryExpression*>(expr))) {
     cout << "binary expression" << endl;
     Expression* result = allocateBinaryExpression(FoldConstants2(bin_exp->lhs), bin_exp->op, FoldConstants2(bin_exp->rhs));
     expr->const_value = result;
   }
-  else if(un_exp = dynamic_cast<UnaryExpression*>(expr)){
+  else if((un_exp = dynamic_cast<UnaryExpression*>(expr))){
     Expression* result = allocateUnaryExpression(un_exp->op, FoldConstants2(un_exp->expr));
     expr->const_value = result;
     return expr;
@@ -496,20 +526,17 @@ Expression* constantFoldHelper(Expression* lhs, Operator op, Expression* rhs) {
     widen_literals(lhslit, rhslit);
     Expression *expr;
     switch(op) {
-      case OP_ADD: expr = add_literals(lhslit, rhslit); break;
-      case OP_SUB: expr = sub_literals(lhslit, rhslit); break;
-      case OP_MUL: expr = mul_literals(lhslit, rhslit); break;
-      case OP_DIV: expr = div_literals(lhslit, rhslit); break;
+      case OP_ADD: add_literals(lhslit, rhslit); break;
+      case OP_SUB: sub_literals(lhslit, rhslit); break;
+      case OP_MUL: mul_literals(lhslit, rhslit); break;
+      case OP_DIV: div_literals(lhslit, rhslit); break;
       default: return new BinaryExpression(lhslit, op, rhslit);
     }
-    return expr;
+    return lhslit;
   }
   return nullptr;
 }
 
-Expression* allocateUnaryExpression(Operator op, Expression* expr) {
-  return new UnaryExpression(op, expr);
-}
 
 ExpressionStatement::ExpressionStatement(Expression *_expr) : expr(_expr) {
     cdebug << "ExpressionStatement constructor called" << endl;

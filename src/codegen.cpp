@@ -13,6 +13,7 @@
 #include "ast.hpp"
 #include "debug.hpp"
 #include <sstream>
+#include "error.hpp"
 
 int intLiteralToInt(string &s){
   return stoi(s);
@@ -82,7 +83,7 @@ bool is_fp_type(SymbolType ty) {
 
 Value* handleAdd(Value* L, Value* R, SymbolType ty){
   if (is_int_type(ty)) {
-    cout << "INT TYPE" << endl;
+    // cout << "INT TYPE" << endl;
     return llvm_builder->CreateAdd(L, R, "temp");
   }
   else if (is_fp_type(ty)) return llvm_builder->CreateFAdd(L, R, "temp");
@@ -239,8 +240,9 @@ llvm::Type* getType(SymbolType ts, int ptr_depth){
   return t;
 }
 
-Constant* getDefaultInitializer(SymbolType ts){
+Constant* getDefaultInitializer(SymbolType ts, int ptr_depth){
   llvm::Type* t;
+  if (ptr_depth > 0) return ConstantPointerNull::get(PointerType::get(*llvm_ctx, 0));
   switch (ts) {
     case FP32: return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(0.0));
     case FP64: return ConstantFP::get(llvm::Type::getDoubleTy(*llvm_ctx), APFloat(0.0));
@@ -322,7 +324,9 @@ llvm::Value* Declaration::globalgen(){
       A->setInitializer(init_val);
     }
     else {
-      A->setInitializer(getDefaultInitializer(typespecs2stg(decl_specs->type_specs)));
+      Constant* init = getDefaultInitializer(typespecs2stg(decl_specs->type_specs), init_decl->ptr_depth);
+      if (init) A->setInitializer(init);
+      else ehdl::err("Could not initialize global value to default value", pos);
     }
     A->setAlignment(MaybeAlign(tsize));
     global_st[init_decl->ident->name ] = A;
@@ -469,9 +473,7 @@ Value *BinaryExpression::codegen() {
     }
   }
   Value *L = lhs->codegen();
-  cout << stype2str(lhs->type_info.st.stype) << endl;
   Value *R = rhs->codegen();
-  cout << stype2str(rhs->type_info.st.stype) << endl;
   // TODO type check. error if types don't match
 
   if (!L || !R)

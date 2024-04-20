@@ -253,6 +253,7 @@ struct Literal : Expression {
   union {
     long l;
     int i;
+    char c;
     double d;
     float f;
   } data;

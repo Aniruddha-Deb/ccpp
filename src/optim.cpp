@@ -17,12 +17,12 @@ Literal* LiteralCopy(Literal* src){
 }
 
 Expression* Expression::const_prop(){
-    cout << "virtual" <<endl;
+    // cout << "virtual" <<endl;
     return nullptr;
 }
 
 Statement* Statement::const_prop(){
-    cout << "virtual const prop statement" <<endl;
+    // cout << "virtual const prop statement" <<endl;
     return nullptr;
 }
 
@@ -104,17 +104,17 @@ Statement* ExpressionStatement::const_prop(){
 Statement* DeclarationStatement::const_prop(){
     for(int i = 0; i < (decl->decl_list)->size(); i++){
         if((*(decl->decl_list))[i]->init_expr){
-             cout << "Const ";
+             // cout << "Const ";
             Expression* exp = (*(decl->decl_list))[i]->init_expr->const_prop();
-             cout << "Const ";
+             // cout << "Const ";
             // delete old exp? 
             // dec->init_expr = exp;
             
             (*(decl->decl_list))[i]->init_expr = FoldConstants(exp);
 
-            cout<<"WHAT"<<endl;
+            // cout<<"WHAT"<<endl;
             if (dynamic_cast<Literal*> ((*(decl->decl_list))[i]->init_expr)){
-                cout << "Const ";
+                // cout << "Const ";
                 cout << (*decl->decl_list)[i]->ident->ident_info.idx << endl;
             }
             constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, dynamic_cast<Literal*> ((*decl->decl_list)[i]->init_expr) );
@@ -129,7 +129,7 @@ Statement* ReturnStatement::const_prop(){
         ret_expr = exp;
         ret_expr = FoldConstants(ret_expr);
         if (ret_expr) {
-            cout << "return pointer exists" << endl;
+            // cout << "return pointer exists" << endl;
         }
     }
     return this;
@@ -137,10 +137,10 @@ Statement* ReturnStatement::const_prop(){
 
 Expression* Identifier::const_prop(){
     if (constant_table.is_constant(ident_info.idx)){
-        cout<<"Found constant"<<endl;
+        // cout<<"Found constant"<<endl;
         Literal* l = dynamic_cast<Literal*>((constant_table.get_value(ident_info.idx))->copy_exp());
         if(!l){
-            cout << "something is wrong" << endl;
+            // cout << "something is wrong" << endl;
         }
         return l;
     }
@@ -168,7 +168,7 @@ Expression* BinaryExpression::const_prop(){
     Expression* newlhs = lhs->const_prop();
     Expression* newrhs = rhs->const_prop();   // delete old expressions
     if (newrhs && newlhs) {
-        cout << "Both exist\n";
+        // cout << "Both exist\n";
     } 
     lhs = newlhs;
     rhs = newrhs;
@@ -177,7 +177,7 @@ Expression* BinaryExpression::const_prop(){
 
 Expression* UnaryExpression::const_prop(){
     if(op == OP_AND){                           // check for all assignment types
-        cout<<"POINTER" <<endl;
+        // cout<<"POINTER" <<endl;
         Identifier* ident = dynamic_cast<Identifier*> (expr);
         if (ident) {
             constant_table.pointer_taken(ident->ident_info.idx);
@@ -285,7 +285,7 @@ Expression* BinaryExpression::flatten_tree(Statement* b){
 }
 
 Expression* Expression::flatten_tree(Statement* b){
-    cout << "virtual f tree" << endl;
+    // cout << "virtual f tree" << endl;
     return nullptr;
 }
 

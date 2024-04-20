@@ -33,7 +33,7 @@ void ConstTable::invalidate_value(int idx){
 
 
 void ConstTable::pointer_taken(int idx){
-    cout << "VALUE REMOVED" << endl;
+    // cout << "VALUE REMOVED" << endl;
     if(value_map.find(idx) != value_map.end()){
         value_map[idx].Value = nullptr;
         value_map[idx].pointer_exists = 1;
@@ -42,12 +42,12 @@ void ConstTable::pointer_taken(int idx){
 
 bool ConstTable::is_constant(int idx){
     if(value_map.find(idx) != value_map.end()){
-        cout<<"FOUND\n";
+        // cout<<"FOUND\n";
         if (value_map[idx].pointer_exists){
             return false;
         }
         if (value_map[idx].Value){
-            cout<<"FOUND\n";
+            // cout<<"FOUND\n";
             return true;
         }
     }
