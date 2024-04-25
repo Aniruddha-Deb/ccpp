@@ -1,7 +1,7 @@
 int printf(const char* fmt, ...);
 
 int var1 = 2;
-unsigned int var2, var3;
+int var2, var3;
 float var4;
 int *ptr;
 

@@ -65,6 +65,7 @@ string lt2str(LiteralType lt) {
     case LT_CHAR: return "LT_CHAR";
     case LT_FLOAT: return "LT_FLOAT";
     case LT_DOUBLE: return "LT_DOUBLE";
+    case LT_BOOL: return "LT_BOOL";
     case LT_INT_LIKE: return "LT_INT_LIKE";
     case LT_FLOAT_LIKE: return "LT_FLOAT_LIKE";
     case LT_STRING: return "LT_STRING";
@@ -354,6 +355,7 @@ Literal::Literal(double _data, LiteralType _ltype) :
   data{0}, ltype(_ltype), value("") { data.d = _data; }
 
 int get_rank(LiteralType ltype) {
+  if (ltype == LT_BOOL) return 0;
   if (ltype == LT_CHAR) return 1;
   if (ltype == LT_INT32 || ltype == LT_UINT32) return 2;
   if (ltype == LT_INT64 || ltype == LT_UINT64) return 3;
@@ -412,6 +414,110 @@ void div_literals(Literal* lhs, Literal* rhs) {
   else lhs->data.l /= rhs->data.l;
 }
 
+void mod_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take modulo of floating point literals", lhs->pos);
+  else if (lhs->ltype == LT_CHAR) lhs->data.c %= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i %= rhs->data.i;
+  else lhs->data.l %= rhs->data.l;
+}
+
+void gt_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT) lhs->data.f = (lhs->data.f > rhs->data.f);
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d = (lhs->data.d > rhs->data.d);
+  else lhs->data.l = (lhs->data.l > rhs->data.l);
+  lhs->ltype = LT_BOOL;
+}
+
+void ge_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT) lhs->data.f = (lhs->data.f >= rhs->data.f);
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d = (lhs->data.d >= rhs->data.d);
+  else lhs->data.l = (lhs->data.l >= rhs->data.l);
+  lhs->ltype = LT_BOOL;
+}
+
+void lt_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT) lhs->data.f = (lhs->data.f < rhs->data.f);
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d = (lhs->data.d < rhs->data.d);
+  else lhs->data.l = (lhs->data.l < rhs->data.l);
+  lhs->ltype = LT_BOOL;
+}
+
+void le_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT) lhs->data.f = (lhs->data.f <= rhs->data.f);
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d = (lhs->data.d <= rhs->data.d);
+  else lhs->data.l = (lhs->data.l <= rhs->data.l);
+  lhs->ltype = LT_BOOL;
+}
+
+void eq_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT) lhs->data.f = (lhs->data.f == rhs->data.f);
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d = (lhs->data.d == rhs->data.d);
+  else lhs->data.l = (lhs->data.l == rhs->data.l);
+  lhs->ltype = LT_BOOL;
+}
+
+void ne_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT) lhs->data.f = (lhs->data.f != rhs->data.f);
+  else if (lhs->ltype == LT_DOUBLE) lhs->data.d = (lhs->data.d != rhs->data.d);
+  else lhs->data.l = (lhs->data.l != rhs->data.l);
+  lhs->ltype = LT_BOOL;
+}
+
+void and_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take and of floating point literals", lhs->pos);
+  else lhs->data.l &= rhs->data.l;
+}
+
+void or_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take or of floating point literals", lhs->pos);
+  else if (lhs->ltype == LT_CHAR) lhs->data.c |= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i |= rhs->data.i;
+  else lhs->data.l |= rhs->data.l;
+}
+
+void xor_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take xor of floating point literals", lhs->pos);
+  else if (lhs->ltype == LT_CHAR) lhs->data.c ^= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i ^= rhs->data.i;
+  else lhs->data.l ^= rhs->data.l;
+}
+
+void lshift_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't left shift floating point literals", lhs->pos);
+  else if (lhs->ltype == LT_CHAR) lhs->data.c <<= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i <<= rhs->data.i;
+  else lhs->data.l <<= rhs->data.l;
+}
+
+void rshift_literals(Literal* lhs, Literal* rhs) {
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't right shift floating point literals", lhs->pos);
+  else if (lhs->ltype == LT_CHAR) lhs->data.c >>= rhs->data.c;
+  else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i >>= rhs->data.i;
+  else lhs->data.l >>= rhs->data.l;
+}
+
+bool lit2bool(Literal* l) {
+  if (l->ltype == LT_STRING) return true;
+  if (l->ltype == LT_FLOAT) return (l->data.f != 0.f && l->data.f != -0.f);
+  if (l->ltype == LT_DOUBLE) return (l->data.d != 0.f && l->data.d != -0.f);
+  return (l->data.l != 0);
+}
+
+void booland_literals(Literal* lhs, Literal* rhs) {
+  lhs->data.l = (lit2bool(lhs) && lit2bool(rhs));
+  lhs->ltype = LT_BOOL;
+}
+
+void boolor_literals(Literal* lhs, Literal* rhs) {
+  lhs->data.l = (lit2bool(lhs) || lit2bool(rhs));
+  lhs->ltype = LT_BOOL;
+}
+
+void boolnot_literal(Literal* l) {
+  l->data.l = !lit2bool(l);
+  l->ltype = LT_BOOL;
+}
+
 void negate_literal_value(Literal* l) {
   if (l->ltype == LT_CHAR) l->data.i *= -1;
   else if (l->ltype == LT_INT32 || l->ltype == LT_UINT32) l->data.i *= -1;
@@ -458,12 +564,36 @@ Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* r
   Literal *lhslit, *rhslit;
   if ((lhslit = dynamic_cast<Literal*>(lhs)) && (rhslit = dynamic_cast<Literal*>(rhs))) {
     widen_literals(lhslit, rhslit);
-    Expression *expr;
     switch(op) {
       case OP_ADD: add_literals(lhslit, rhslit); break;
       case OP_SUB: sub_literals(lhslit, rhslit); break;
       case OP_MUL: mul_literals(lhslit, rhslit); break;
       case OP_DIV: div_literals(lhslit, rhslit); break;
+      case OP_MOD: mod_literals(lhslit, rhslit); break;
+      case OP_BOOL_AND: booland_literals(lhslit, rhslit); break;
+      case OP_BOOL_OR: boolor_literals(lhslit, rhslit); break;
+      case OP_AND: and_literals(lhslit, rhslit); break;
+      case OP_OR: or_literals(lhslit, rhslit); break;
+      case OP_XOR: xor_literals(lhslit, rhslit); break;
+      case OP_LSHIFT: lshift_literals(lhslit, rhslit); break;
+      case OP_RSHIFT: rshift_literals(lhslit, rhslit); break;
+      case OP_LT: lt_literals(lhslit, rhslit); break;
+      case OP_LE: le_literals(lhslit, rhslit); break;
+      case OP_GT: gt_literals(lhslit, rhslit); break;
+      case OP_GE: ge_literals(lhslit, rhslit); break;
+      case OP_EQ: eq_literals(lhslit, rhslit); break;
+      case OP_NE: ne_literals(lhslit, rhslit); break;
+      case OP_ASSIGN:
+      case OP_ADD_ASSIGN:
+      case OP_SUB_ASSIGN:
+      case OP_MUL_ASSIGN:
+      case OP_DIV_ASSIGN:
+      case OP_MOD_ASSIGN:
+      case OP_AND_ASSIGN:
+      case OP_OR_ASSIGN:
+      case OP_XOR_ASSIGN:
+      case OP_LEFT_ASSIGN:
+      case OP_RIGHT_ASSIGN: ehdl::err("Cannot assign a constant to a value", lhs->pos); break;
       default: return new BinaryExpression(lhslit, op, rhslit);
     }
     delete rhs;
@@ -483,60 +613,6 @@ Expression* allocateUnaryExpression(Operator op, Expression* expr) {
   }
   return new UnaryExpression(op, expr);
 }
-
-Expression* FoldConstants2(Expression* expr){
-  BinaryExpression* bin_exp;
-  UnaryExpression* un_exp;
-  if ((bin_exp = dynamic_cast<BinaryExpression*>(expr))) {
-    cout << "binary expression" << endl;
-    Expression* result = allocateBinaryExpression(FoldConstants2(bin_exp->lhs), bin_exp->op, FoldConstants2(bin_exp->rhs));
-    expr->const_value = result;
-  }
-  else if((un_exp = dynamic_cast<UnaryExpression*>(expr))){
-    Expression* result = allocateUnaryExpression(un_exp->op, FoldConstants2(un_exp->expr));
-    expr->const_value = result;
-    return expr;
-  }
-  else if(Literal* lit = dynamic_cast<Literal*>(expr)){
-    lit->const_value = lit->copy_exp();
-    return expr;
-  }
-  return expr;
-}
-
-Expression* constantFoldHelper(Expression* lhs, Operator op, Expression* rhs) {
-  Identifier *ident;
-  if ((ident = dynamic_cast<Identifier*>(lhs))) {
-    // assignments can get constant folded because of this
-    switch(op) {
-      case OP_ADD_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_ADD,    rhs));
-      case OP_SUB_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_SUB,    rhs));
-      case OP_MUL_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_MUL,    rhs));
-      case OP_DIV_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_DIV,    rhs));
-      case OP_MOD_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_MOD,    rhs));
-      case OP_AND_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_AND,    rhs));
-      case OP_OR_ASSIGN:    return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_OR,     rhs));
-      case OP_XOR_ASSIGN:   return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_XOR,    rhs));
-      case OP_LEFT_ASSIGN:  return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_LSHIFT, rhs));
-      case OP_RIGHT_ASSIGN: return allocateBinaryExpression(ident, OP_ASSIGN, allocateBinaryExpression(ident, OP_RSHIFT, rhs));
-    }
-  }
-  Literal *lhslit, *rhslit;
-  if ((lhslit = dynamic_cast<Literal*>(lhs->const_value)) && (rhslit = dynamic_cast<Literal*>(rhs->const_value))) {
-    widen_literals(lhslit, rhslit);
-    Expression *expr;
-    switch(op) {
-      case OP_ADD: add_literals(lhslit, rhslit); break;
-      case OP_SUB: sub_literals(lhslit, rhslit); break;
-      case OP_MUL: mul_literals(lhslit, rhslit); break;
-      case OP_DIV: div_literals(lhslit, rhslit); break;
-      default: return new BinaryExpression(lhslit, op, rhslit);
-    }
-    return lhslit;
-  }
-  return nullptr;
-}
-
 
 ExpressionStatement::ExpressionStatement(Expression *_expr) : expr(_expr) {
     cdebug << "ExpressionStatement constructor called" << endl;

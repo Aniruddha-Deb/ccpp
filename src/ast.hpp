@@ -79,6 +79,7 @@ enum LiteralType {
   LT_CHAR,
   LT_FLOAT,
   LT_DOUBLE,
+  LT_BOOL,
   LT_INT_LIKE,
   LT_FLOAT_LIKE,
   LT_STRING
