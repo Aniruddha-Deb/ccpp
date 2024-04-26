@@ -135,8 +135,13 @@ Statement* DeclarationStatement::const_prop(){
 
                 // cout << (*decl->decl_list)[i]->ident->ident_info.idx << endl;
                 Literal* initlit = dynamic_cast<Literal*> (((*(decl->decl_list))[i]->init_expr)->copy_exp());
-                assign_literals(((*decl->decl_list)[i]->ident->ident_info.stype), (initlit));
-                constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx,(initlit));
+                if (!(*decl->decl_list)[i]->ident->ident_info.ptr_depth){
+                    assign_literals(((*decl->decl_list)[i]->ident->ident_info.stype), (initlit));
+                    constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx,(initlit));
+                }
+                else{
+                     constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, nullptr) ;
+                }
                 // cout << initlit->data.s << " " <<initlit->ltype << endl;
             }
             else{
@@ -183,9 +188,13 @@ Expression* BinaryExpression::const_prop(){
         if (ident) {
             Literal* rhslit =dynamic_cast<Literal*> (rhs);
             if (rhslit) {
-                assign_literals(ident->ident_info.stype, rhslit);
+                if(!(ident->ident_info.ptr_depth)){
+                    cout << ident->name << endl;
+                    assign_literals(ident->ident_info.stype, rhslit);
+                    constant_table.update_value(ident->ident_info.idx, rhslit );
+                }
             }
-            constant_table.update_value(ident->ident_info.idx, rhslit );
+            
         }
         else{
             lhs = lhs->const_prop();       // not sure

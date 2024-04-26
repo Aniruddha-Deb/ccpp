@@ -19,7 +19,7 @@ int main() {
     // k = 15;
     // u = k / c;
     // d = 8.2;
-    if ( c > l) {
+    if ( c < l) {
         return 0;
     }
     else{

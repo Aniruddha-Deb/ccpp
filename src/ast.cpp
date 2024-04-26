@@ -408,6 +408,9 @@ LiteralType symbol_to_literal(SymbolType st){
 }
 
 void assign_literals(SymbolType lhstype, Literal* rhslit) {
+  if (rhslit->ltype == LT_STRING) {
+    return;
+  }
   if (get_rank(rhslit->ltype) > get_symbol_rank(lhstype)) {
     switch (rhslit->ltype) {
       case LT_DOUBLE: 

@@ -28,6 +28,8 @@ SymbolType typespecs2st(std::set<TypeSpecifier> type_specs) {
 void Identifier::scopify() {
   cdebug << "Identifier::scopify: " << endl;
   ident_info = table->find_symbol(name);
+  // cout << name << " ";
+  // cout << ident_info.ptr_depth << endl;
 }
 
 void TernaryExpression::scopify() {

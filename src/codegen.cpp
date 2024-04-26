@@ -623,6 +623,8 @@ Constant* Literal::codegen() {
     case LT_FLOAT_LIKE:
       cout << "ERROR: should have parsed float_like by now" << endl;
     case LT_STRING:
+      type_info.st.stype = U8;
+      type_info.st.ptr_depth = 1;
       return llvm_builder->CreateGlobalStringPtr(value, ".str");
     default:
       cout<<"invalid literal"<<endl;
