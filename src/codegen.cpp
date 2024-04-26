@@ -240,6 +240,175 @@ llvm::Type* getType(SymbolType ts, int ptr_depth){
   return t;
 }
 
+
+int get_rank(SymbolType st) {
+  if (st == I1) return 0;
+  if ((st == I8) || (st == U8)) return 1;
+  if ((st == I32 || st == U32)) return 2;
+  if ((st == I64 || st == U64)) return 3;
+  if (st == FP32) return 4;
+  if (st == FP64) return 5;
+  return -1;
+}
+
+
+Value* widenToFloat(Value* v, SymbolType st, llvm::Type* ty){
+  if (st == I1) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I8) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U8) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I32) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U32) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I64) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U64) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == FP32) return llvm_builder->CreateFPExt(v, ty, "widen");
+  if (st == FP64) return llvm_builder->CreateFPExt(v, ty, "widen");
+}
+
+Value* widenToSInt(Value* v, SymbolType st, llvm::Type* ty){
+  if (st == I1) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == I8) return llvm_builder->CreateSExt(v, ty, "widen");
+  if (st == U8) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == I32) return llvm_builder->CreateSExt(v, ty, "widen");
+  if (st == U32) return llvm_builder->CreateZExt(v, ty, "widen");
+  // if (st == I64) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  // if (st == U64) return llvm_builder->CreateUIToFP(v, ty, "widen");
+}
+
+
+
+Value* widenToUInt(Value* v, SymbolType st, llvm::Type* ty){
+  if (st == I1) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == I8) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == U8) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == I32) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == U32) return llvm_builder->CreateZExt(v, ty, "widen");
+}
+
+
+Value* widenOrNarrowToUInt(Value* v, SymbolType st, llvm::Type* ty){
+  if (st == I1) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I8) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == U8) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I32) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == U32) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I64) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == U64) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == FP32) return llvm_builder->CreateFPToUI(v, ty, "widen");
+  if (st == FP64) return llvm_builder->CreateFPToUI(v, ty, "widen");
+}
+
+Value* widenOrNarrowToSInt(Value* v, SymbolType st, llvm::Type* ty){
+  if (st == I1) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I8) return llvm_builder->CreateSExtOrTrunc(v, ty, "widen");
+  if (st == U8) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I32) return llvm_builder->CreateSExtOrTrunc(v, ty, "widen");
+  if (st == U32) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I64) return llvm_builder->CreateSExtOrTrunc(v, ty, "widen");
+  if (st == U64) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == FP32) return llvm_builder->CreateFPToSI(v, ty, "widen");
+  if (st == FP64) return llvm_builder->CreateFPToSI(v, ty, "widen");
+}
+
+
+Value* widenOrNarrowToFloat(Value* v, SymbolType st, llvm::Type* ty){
+  if (st == I1) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I8) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U8) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I32) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U32) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I64) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U64) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == FP32) return llvm_builder->CreateFPExt(v, ty, "widen");
+  if (st == FP64) return llvm_builder->CreateFPTrunc(v, ty, "widen");
+}
+
+// widen if not an assignment
+
+void widen_expression(Expression* lhsexp, Expression* rhsexp, Value* lhsval, Value* rhsval, Value** newlhs, Value** newrhs) {
+  if (get_rank(rhsexp->type_info.st.stype) > get_rank(lhsexp->type_info.st.stype)) {
+    switch (rhsexp->type_info.st.stype) {
+      case FP64:  
+        *newlhs = widenToFloat(lhsval, lhsexp->type_info.st.stype, Type::getDoubleTy(*llvm_ctx));
+        break;
+      case FP32:
+        *newlhs = widenToFloat(lhsval, lhsexp->type_info.st.stype, Type::getFloatTy(*llvm_ctx));
+        break;
+      default:
+        if(is_signed_int_type(rhsexp->type_info.st.stype)){
+          *newlhs = widenToSInt(lhsval, lhsexp->type_info.st.stype, getType(rhsexp->type_info.st.stype, 0));
+        }
+        else if(is_unsigned_int_type(rhsexp->type_info.st.stype)){
+          *newlhs = widenToUInt(lhsval, lhsexp->type_info.st.stype, getType(rhsexp->type_info.st.stype, 0));
+        }
+    }
+    lhsexp->type_info.st.stype = rhsexp->type_info.st.stype;
+    *newrhs = rhsval;
+  }
+  else if (get_rank(lhsexp->type_info.st.stype) > get_rank(rhsexp->type_info.st.stype)) {
+    switch (lhsexp->type_info.st.stype) {
+      case FP64:  
+        *newrhs = widenToFloat(rhsval, rhsexp->type_info.st.stype, Type::getDoubleTy(*llvm_ctx));
+        break;
+      case FP32:
+        *newrhs = widenToFloat(rhsval, rhsexp->type_info.st.stype, Type::getFloatTy(*llvm_ctx));
+        break;
+      default:
+        if(is_signed_int_type(lhsexp->type_info.st.stype)){
+          *newrhs = widenToSInt(rhsval, rhsexp->type_info.st.stype, getType(lhsexp->type_info.st.stype, 0));
+        }
+        else if(is_unsigned_int_type(lhsexp->type_info.st.stype)){
+          *newrhs = widenToUInt(rhsval, rhsexp->type_info.st.stype, getType(lhsexp->type_info.st.stype, 0));
+        }
+    }
+    lhsexp->type_info.st.stype = rhsexp->type_info.st.stype;
+    *newlhs = lhsval;
+  }
+
+}
+
+
+Value* convertForAssignment(Expression* lhsexp, Expression* rhsexp, Value* rhsval) {
+  Value* newrhs;
+  switch (lhsexp->type_info.st.stype) {
+      case FP64:  
+        newrhs =  widenOrNarrowToFloat(rhsval, rhsexp->type_info.st.stype, Type::getDoubleTy(*llvm_ctx));
+        break;
+      case FP32:
+        newrhs = widenOrNarrowToFloat(rhsval, rhsexp->type_info.st.stype, Type::getFloatTy(*llvm_ctx));
+        break;
+      default:
+        if(is_signed_int_type(lhsexp->type_info.st.stype)){
+          newrhs = widenOrNarrowToSInt(rhsval, rhsexp->type_info.st.stype, getType(lhsexp->type_info.st.stype, 0));
+        }
+        else if(is_unsigned_int_type(lhsexp->type_info.st.stype)){
+          newrhs = widenOrNarrowToUInt(rhsval, rhsexp->type_info.st.stype, getType(lhsexp->type_info.st.stype, 0));
+        }
+  }
+  return newrhs;
+}
+
+Value* convertForInit(SymbolType lhstype, Expression* rhsexp, Value* rhsval) {
+  Value* newrhs;
+  switch (lhstype) {
+      case FP64:  
+        newrhs =  widenOrNarrowToFloat(rhsval, rhsexp->type_info.st.stype, Type::getDoubleTy(*llvm_ctx));
+        break;
+      case FP32:
+        newrhs = widenOrNarrowToFloat(rhsval, rhsexp->type_info.st.stype, Type::getFloatTy(*llvm_ctx));
+        break;
+      default:
+        if(is_signed_int_type(lhstype)){
+          newrhs = widenOrNarrowToSInt(rhsval, rhsexp->type_info.st.stype, getType(lhstype, 0));
+        }
+        else if(is_unsigned_int_type(lhstype)){
+          newrhs = widenOrNarrowToUInt(rhsval, rhsexp->type_info.st.stype, getType(lhstype, 0));
+        }
+  }
+  return newrhs;
+}
+
+
+
 Constant* getDefaultInitializer(SymbolType ts, int ptr_depth){
   llvm::Type* t;
   if (ptr_depth > 0) return ConstantPointerNull::get(PointerType::get(*llvm_ctx, 0));
@@ -293,7 +462,14 @@ llvm::Value* Declaration::codegen(){
     AllocaInst* A = CreateEntryBlockAlloca(func, decl_specs, init_decl->ptr_depth, init_decl->ident);
     if(init_decl->init_expr){
       Value* init_val = init_decl->init_expr->codegen();
-      llvm_builder->CreateStore(init_val, A);
+      if ((init_decl->init_expr->type_info.st.stype != init_decl->ident->ident_info.stype) 
+          && !(init_decl->init_expr->type_info.st.ptr_depth) && !(init_decl->ptr_depth)){
+          Value* newval = convertForInit(init_decl->ident->ident_info.stype, init_decl->init_expr, init_val);
+          llvm_builder->CreateStore(newval, A);
+      }
+      else{
+        llvm_builder->CreateStore(init_val, A);
+      }
     }
     llvm_st[getVarName(init_decl->ident, "l") ] = A;
   }
@@ -453,37 +629,50 @@ Value* Identifier::get_address(){
 
 Value *BinaryExpression::codegen() {
   if (op == OP_ASSIGN){
-    // cdebug<<"calling getaddr"<<endl;
-    Value* V = (lhs->get_address());
 
-    
-    // AllocaInst* A = llvm::dyn_cast<AllocaInst>(V); 
-    Value* A = V;
  
     Value* R = rhs->codegen();
-    type_info.st = rhs->type_info.st;
+    Value* V = (lhs->get_address());
+    Value* A = V;
+    type_info.st = lhs->type_info.st;
     type_info.is_ref = false;                       
     if((lhs->type_info.st.stype == rhs->type_info.st.stype) && (lhs->type_info.st.ptr_depth == rhs->type_info.st.ptr_depth) && (lhs->type_info.is_ref)){
-      llvm_builder->CreateStore(R, A, "assigntemp");
+      llvm_builder->CreateStore(R, A);
       return R;
     }
-    else{
+    else if ((rhs->type_info.st.ptr_depth == 0) && (lhs->type_info.st.ptr_depth == 0) && lhs->type_info.is_ref){
+      Value* newrhs = convertForAssignment(lhs, rhs, R);
+      llvm_builder->CreateStore(newrhs, A);
+      return newrhs;    // should i return newrhs or R. if R then don't update type info of expression ig.
+    }
+    else{      
       cout<<"Assignment type mismatch";
       return nullptr;
     }
   }
-  Value *L = lhs->codegen();
-  Value *R = rhs->codegen();
+  Value *oldL = lhs->codegen();
+  Value *oldR = rhs->codegen();
   // TODO type check. error if types don't match
 
-  if (!L || !R)
+  if (!oldL || !oldR)
     return nullptr;
 
   // handle integer + pointer
 
+  Value* R, *L;   // new L and R
+
   if(lhs->type_info.st.stype != rhs->type_info.st.stype || lhs->type_info.st.ptr_depth != rhs->type_info.st.ptr_depth || lhs->type_info.st.ptr_depth != 0){
-    cout<<"Type mismatch"<<endl;
-    return nullptr;
+    if (lhs->type_info.st.ptr_depth == 0 &&  rhs->type_info.st.ptr_depth == 0) {
+      widen_expression(lhs, rhs, oldL, oldR, &L, &R);
+    }
+    else{
+      cout<<"Type mismatch"<<endl;
+      return nullptr;
+    }
+  }
+  else{
+    R = oldR;
+    L = oldL;
   }
 
   type_info.is_ref = false;
