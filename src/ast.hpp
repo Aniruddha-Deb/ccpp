@@ -82,7 +82,8 @@ enum LiteralType {
   LT_BOOL,
   LT_INT_LIKE,
   LT_FLOAT_LIKE,
-  LT_STRING
+  LT_STRING,
+  LT_SHORT
 };
 
 enum StorageSpecifier {
@@ -187,6 +188,7 @@ struct Identifier : Expression {
   void scopify() override;
 };
 
+
 Expression* FoldConstants(Expression* expr);
 
 struct TernaryExpression : Expression {
@@ -255,6 +257,7 @@ struct Literal : Expression {
     long l;
     int i;
     char c;
+    short s;
     double d;
     float f;
   } data;
@@ -271,6 +274,7 @@ struct Literal : Expression {
   string dump_ast(string prefix) override;
 };
 
+void assign_literals(SymbolType lhstype, Literal* rhslit);
 Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* rhs);
 Expression* allocateUnaryExpression(Operator op, Expression* expr);
 

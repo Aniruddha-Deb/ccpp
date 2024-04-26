@@ -244,10 +244,11 @@ llvm::Type* getType(SymbolType ts, int ptr_depth){
 int get_rank(SymbolType st) {
   if (st == I1) return 0;
   if ((st == I8) || (st == U8)) return 1;
-  if ((st == I32 || st == U32)) return 2;
-  if ((st == I64 || st == U64)) return 3;
-  if (st == FP32) return 4;
-  if (st == FP64) return 5;
+  if ((st == I16) || (st == U16)) return 2;
+  if ((st == I32 || st == U32)) return 3;
+  if ((st == I64 || st == U64)) return 4;
+  if (st == FP32) return 5;
+  if (st == FP64) return 6;
   return -1;
 }
 
@@ -257,6 +258,8 @@ Value* widenToFloat(Value* v, SymbolType st, llvm::Type* ty){
   if (st == I8) return llvm_builder->CreateSIToFP(v, ty, "widen");
   if (st == U8) return llvm_builder->CreateUIToFP(v, ty, "widen");
   if (st == I32) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U16) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I16) return llvm_builder->CreateSIToFP(v, ty, "widen");
   if (st == U32) return llvm_builder->CreateUIToFP(v, ty, "widen");
   if (st == I64) return llvm_builder->CreateSIToFP(v, ty, "widen");
   if (st == U64) return llvm_builder->CreateUIToFP(v, ty, "widen");
@@ -268,6 +271,8 @@ Value* widenToSInt(Value* v, SymbolType st, llvm::Type* ty){
   if (st == I1) return llvm_builder->CreateZExt(v, ty, "widen");
   if (st == I8) return llvm_builder->CreateSExt(v, ty, "widen");
   if (st == U8) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == U16) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == I16) return llvm_builder->CreateSExt(v, ty, "widen");
   if (st == I32) return llvm_builder->CreateSExt(v, ty, "widen");
   if (st == U32) return llvm_builder->CreateZExt(v, ty, "widen");
   // if (st == I64) return llvm_builder->CreateSIToFP(v, ty, "widen");
@@ -280,6 +285,8 @@ Value* widenToUInt(Value* v, SymbolType st, llvm::Type* ty){
   if (st == I1) return llvm_builder->CreateZExt(v, ty, "widen");
   if (st == I8) return llvm_builder->CreateZExt(v, ty, "widen");
   if (st == U8) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == U16) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == I16) return llvm_builder->CreateZExt(v, ty, "widen");
   if (st == I32) return llvm_builder->CreateZExt(v, ty, "widen");
   if (st == U32) return llvm_builder->CreateZExt(v, ty, "widen");
 }
@@ -289,18 +296,22 @@ Value* widenOrNarrowToUInt(Value* v, SymbolType st, llvm::Type* ty){
   if (st == I1) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == I8) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == U8) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == U16) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I16) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == I32) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == U32) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == I64) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == U64) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
-  if (st == FP32) return llvm_builder->CreateFPToUI(v, ty, "widen");
-  if (st == FP64) return llvm_builder->CreateFPToUI(v, ty, "widen");
+  if (st == FP32) return llvm_builder->CreateFPToUI(v, ty, "fptoint");
+  if (st == FP64) return llvm_builder->CreateFPToUI(v, ty, "fptoint");
 }
 
 Value* widenOrNarrowToSInt(Value* v, SymbolType st, llvm::Type* ty){
   if (st == I1) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == I8) return llvm_builder->CreateSExtOrTrunc(v, ty, "widen");
   if (st == U8) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == U16) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
+  if (st == I16) return llvm_builder->CreateSExtOrTrunc(v, ty, "widen");
   if (st == I32) return llvm_builder->CreateSExtOrTrunc(v, ty, "widen");
   if (st == U32) return llvm_builder->CreateZExtOrTrunc(v, ty, "widen");
   if (st == I64) return llvm_builder->CreateSExtOrTrunc(v, ty, "widen");
@@ -314,6 +325,8 @@ Value* widenOrNarrowToFloat(Value* v, SymbolType st, llvm::Type* ty){
   if (st == I1) return llvm_builder->CreateUIToFP(v, ty, "widen");
   if (st == I8) return llvm_builder->CreateSIToFP(v, ty, "widen");
   if (st == U8) return llvm_builder->CreateUIToFP(v, ty, "widen");
+  if (st == I16) return llvm_builder->CreateSIToFP(v, ty, "widen");
+  if (st == U16) return llvm_builder->CreateUIToFP(v, ty, "widen");
   if (st == I32) return llvm_builder->CreateSIToFP(v, ty, "widen");
   if (st == U32) return llvm_builder->CreateUIToFP(v, ty, "widen");
   if (st == I64) return llvm_builder->CreateSIToFP(v, ty, "widen");
@@ -461,17 +474,24 @@ llvm::Value* Declaration::codegen(){
   for(auto init_decl: *decl_list){
     AllocaInst* A = CreateEntryBlockAlloca(func, decl_specs, init_decl->ptr_depth, init_decl->ident);
     if(init_decl->init_expr){
+      // cout << "START DECL\n";
       Value* init_val = init_decl->init_expr->codegen();
+      // cout << "EXPR GEN\n";
       if ((init_decl->init_expr->type_info.st.stype != init_decl->ident->ident_info.stype) 
           && !(init_decl->init_expr->type_info.st.ptr_depth) && !(init_decl->ptr_depth)){
+          // cout << "IF" << endl;
+
           Value* newval = convertForInit(init_decl->ident->ident_info.stype, init_decl->init_expr, init_val);
           llvm_builder->CreateStore(newval, A);
       }
       else{
+        // cout << "ELSE" << endl;
         llvm_builder->CreateStore(init_val, A);
       }
     }
+    // cout << "CONVERTED\n";
     llvm_st[getVarName(init_decl->ident, "l") ] = A;
+    // cout << "DONE DECL" << endl;
   }
 
   return nullptr;
@@ -583,6 +603,12 @@ Constant* Literal::codegen() {
     case LT_UINT64:
       type_info.st.stype = U64;
       return ConstantInt::get(*llvm_ctx, APInt(64, data.i));
+    case LT_SHORT:
+      type_info.st.stype = I16;
+      return ConstantInt::get(*llvm_ctx, APInt(16, data.i));
+    case LT_CHAR:
+      type_info.st.stype = I8;
+      return ConstantInt::get(*llvm_ctx, APInt(8, data.i));
     case LT_FLOAT:
       type_info.st.stype = FP32;
       return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(data.f));

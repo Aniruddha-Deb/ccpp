@@ -20,7 +20,7 @@ entry:
   store i16 15, i16* %l3, align 2
   store i16 7, i16* %l4, align 2
   store double 0x4020666666666666, double* %l5, align 8
-  %calltmp = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str, i32 0, i32 0), i32 5, i64 10, i32 2, i32 15, i32 7)
+  %calltmp = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str, i32 0, i32 0), i16 5, i64 10, i16 2, i16 15, i16 7)
   %calltmp1 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.1, i32 0, i32 0), double 0x4020666666666666)
   ret i32 0
 }

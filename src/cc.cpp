@@ -59,8 +59,10 @@ int main(int argc, char **argv) {
 
   tu->const_prop();
 
+  // tu->dump_ast();
+
   // std::cout << "Done optimizing" << std::endl;
-  // std::cout << tu->dump_ast("") << std::endl;
+  std::cout << tu->dump_ast("") << std::endl;
 
   // printf("retv = %d\n", ret);
 

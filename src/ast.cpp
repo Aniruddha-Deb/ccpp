@@ -357,10 +357,22 @@ Literal::Literal(double _data, LiteralType _ltype) :
 int get_rank(LiteralType ltype) {
   if (ltype == LT_BOOL) return 0;
   if (ltype == LT_CHAR) return 1;
-  if (ltype == LT_INT32 || ltype == LT_UINT32) return 2;
-  if (ltype == LT_INT64 || ltype == LT_UINT64) return 3;
-  if (ltype == LT_FLOAT) return 4;
-  if (ltype == LT_DOUBLE) return 5;
+  if (ltype == LT_SHORT) return 2;
+  if (ltype == LT_INT32 || ltype == LT_UINT32) return 3;
+  if (ltype == LT_INT64 || ltype == LT_UINT64) return 4;
+  if (ltype == LT_FLOAT) return 5;
+  if (ltype == LT_DOUBLE) return 6;
+  return -1;
+}
+
+int get_symbol_rank(SymbolType st) {
+  if (st == I1) return 0;
+  if ((st == I8) || (st == U8)) return 1;
+  if ((st == I16) || (st == U16)) return 2;
+  if ((st == I32 || st == U32)) return 3;
+  if ((st == I64 || st == U64)) return 4;
+  if (st == FP32) return 5;
+  if (st == FP64) return 6;
   return -1;
 }
 
@@ -381,8 +393,48 @@ void widen_literals(Literal* lhslit, Literal* rhslit) {
   }
 }
 
+LiteralType symbol_to_literal(SymbolType st){
+  if (st == FP64) return LT_DOUBLE;
+  if (st == FP32) return LT_FLOAT;
+  if (st == I64) return LT_INT64;
+  if (st == I32) return LT_INT32;
+  if (st == I16) return LT_SHORT;
+  if (st == I8) return LT_CHAR;
+  if (st == I1) return LT_BOOL;
+  if (st == U64) return LT_UINT64;
+  if (st == U32) return LT_UINT32;
+  if (st == U16) return LT_SHORT;
+  if (st == U8) return LT_CHAR;
+}
+
+void assign_literals(SymbolType lhstype, Literal* rhslit) {
+  if (get_rank(rhslit->ltype) > get_symbol_rank(lhstype)) {
+    switch (rhslit->ltype) {
+      case LT_DOUBLE: 
+        if (lhstype == FP32) {
+          rhslit->data.f = float(rhslit->data.d); 
+        }
+        else{
+          rhslit->data.l = floor(rhslit->data.d);
+        }
+      break;
+      case LT_FLOAT: rhslit->data.l = long(rhslit->data.f); break;
+    }
+    rhslit->ltype = symbol_to_literal(lhstype);
+    // cout << rhslit->data.l << endl;
+  }
+  else if (get_symbol_rank(lhstype) > get_rank(rhslit->ltype)) {
+    switch (lhstype) {
+      case FP64: rhslit->data.d = double(rhslit->data.l); break;
+      case FP32: rhslit->data.f = float(rhslit->data.l); break;
+    }
+    rhslit->ltype = symbol_to_literal(lhstype);
+  }
+}
+
 void add_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_CHAR) lhs->data.c += rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s += rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i += rhs->data.i;
   else if (lhs->ltype == LT_FLOAT) lhs->data.f += rhs->data.f;
   else if (lhs->ltype == LT_DOUBLE) lhs->data.d += rhs->data.d;
@@ -391,6 +443,7 @@ void add_literals(Literal* lhs, Literal* rhs) {
 
 void sub_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_CHAR) lhs->data.c -= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s -= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i -= rhs->data.i;
   else if (lhs->ltype == LT_FLOAT) lhs->data.f -= rhs->data.f;
   else if (lhs->ltype == LT_DOUBLE) lhs->data.d -= rhs->data.d;
@@ -399,6 +452,7 @@ void sub_literals(Literal* lhs, Literal* rhs) {
 
 void mul_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_CHAR) lhs->data.c *= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s *= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i *= rhs->data.i;
   else if (lhs->ltype == LT_FLOAT) lhs->data.f *= rhs->data.f;
   else if (lhs->ltype == LT_DOUBLE) lhs->data.d *= rhs->data.d;
@@ -407,16 +461,20 @@ void mul_literals(Literal* lhs, Literal* rhs) {
 
 // Udiv different from sdiv?
 void div_literals(Literal* lhs, Literal* rhs) {
+  // cout << rhs->ltype << " " << rhs->data.s << endl;
   if (lhs->ltype == LT_CHAR) lhs->data.c /= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s /= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i /= rhs->data.i;
   else if (lhs->ltype == LT_FLOAT) lhs->data.f /= rhs->data.f;
   else if (lhs->ltype == LT_DOUBLE) lhs->data.d /= rhs->data.d;
   else lhs->data.l /= rhs->data.l;
+  // cout << lhs->ltype << " " << lhs->data.s << endl;
 }
 
 void mod_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take modulo of floating point literals", lhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c %= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s %= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i %= rhs->data.i;
   else lhs->data.l %= rhs->data.l;
 }
@@ -471,6 +529,7 @@ void and_literals(Literal* lhs, Literal* rhs) {
 void or_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take or of floating point literals", lhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c |= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s |= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i |= rhs->data.i;
   else lhs->data.l |= rhs->data.l;
 }
@@ -478,6 +537,7 @@ void or_literals(Literal* lhs, Literal* rhs) {
 void xor_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take xor of floating point literals", lhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c ^= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s ^= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i ^= rhs->data.i;
   else lhs->data.l ^= rhs->data.l;
 }
@@ -485,6 +545,7 @@ void xor_literals(Literal* lhs, Literal* rhs) {
 void lshift_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't left shift floating point literals", lhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c <<= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s <<= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i <<= rhs->data.i;
   else lhs->data.l <<= rhs->data.l;
 }
@@ -492,6 +553,7 @@ void lshift_literals(Literal* lhs, Literal* rhs) {
 void rshift_literals(Literal* lhs, Literal* rhs) {
   if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't right shift floating point literals", lhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c >>= rhs->data.c;
+  else if (lhs->ltype == LT_SHORT) lhs->data.s >>= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i >>= rhs->data.i;
   else lhs->data.l >>= rhs->data.l;
 }
@@ -519,7 +581,8 @@ void boolnot_literal(Literal* l) {
 }
 
 void negate_literal_value(Literal* l) {
-  if (l->ltype == LT_CHAR) l->data.i *= -1;
+  if (l->ltype == LT_CHAR) l->data.c *= -1;
+  else if (l->ltype == LT_SHORT) l->data.s *= -1;
   else if (l->ltype == LT_INT32 || l->ltype == LT_UINT32) l->data.i *= -1;
   else if (l->ltype == LT_FLOAT) l->data.f *= -1;
   else if (l->ltype == LT_DOUBLE) l->data.d *= -1;
@@ -528,12 +591,16 @@ void negate_literal_value(Literal* l) {
 
 // TODO add more operators (bitwise, relational, logical and unary)
 
+
+
+
 Expression* FoldConstants(Expression* expr){
   BinaryExpression* bin_exp;
   UnaryExpression* un_exp;
   if ((bin_exp = dynamic_cast<BinaryExpression*>(expr))) {
-    // cout << "binary expression" << endl;
+    cout << "binary expression" << endl;
     Expression* result = allocateBinaryExpression(FoldConstants(bin_exp->lhs), bin_exp->op, FoldConstants(bin_exp->rhs));
+    cout << dynamic_cast<Literal*> (result);
     return result;
   }
   else if((un_exp = dynamic_cast<UnaryExpression*>(expr))){
@@ -601,6 +668,7 @@ Expression* allocateBinaryExpression(Expression* lhs, Operator op, Expression* r
   }
   return new BinaryExpression(lhs, op, rhs);
 }
+
 
 Expression* allocateUnaryExpression(Operator op, Expression* expr) {
   Literal *lit;

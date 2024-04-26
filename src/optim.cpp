@@ -113,11 +113,19 @@ Statement* DeclarationStatement::const_prop(){
             (*(decl->decl_list))[i]->init_expr = FoldConstants(exp);
 
             // cout<<"WHAT"<<endl;
+
             if (dynamic_cast<Literal*> ((*(decl->decl_list))[i]->init_expr)){
                 // cout << "Const ";
-                cout << (*decl->decl_list)[i]->ident->ident_info.idx << endl;
+
+                // cout << (*decl->decl_list)[i]->ident->ident_info.idx << endl;
+                Literal* initlit = dynamic_cast<Literal*> (((*(decl->decl_list))[i]->init_expr)->copy_exp());
+                assign_literals(((*decl->decl_list)[i]->ident->ident_info.stype), (initlit));
+                constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx,(initlit));
+                // cout << initlit->data.s << " " <<initlit->ltype << endl;
             }
-            constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, dynamic_cast<Literal*> ((*decl->decl_list)[i]->init_expr) );
+            else{
+                constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, dynamic_cast<Literal*> ((*decl->decl_list)[i]->init_expr) );
+            }
         }
     }
     return this;
@@ -140,7 +148,7 @@ Expression* Identifier::const_prop(){
         // cout<<"Found constant"<<endl;
         Literal* l = dynamic_cast<Literal*>((constant_table.get_value(ident_info.idx))->copy_exp());
         if(!l){
-            // cout << "something is wrong" << endl;
+            cout << "something is wrong" << endl;
         }
         return l;
     }
@@ -157,7 +165,11 @@ Expression* BinaryExpression::const_prop(){
         // rhs = newrhs;
         Identifier* ident = dynamic_cast<Identifier*> (lhs);
         if (ident) {
-            constant_table.update_value(ident->ident_info.idx, dynamic_cast<Literal*> (rhs) );
+            Literal* rhslit =dynamic_cast<Literal*> (rhs);
+            if (rhslit) {
+                assign_literals(ident->ident_info.stype, rhslit);
+            }
+            constant_table.update_value(ident->ident_info.idx, rhslit );
         }
         else{
             lhs = lhs->const_prop();       // not sure
