@@ -269,7 +269,7 @@ Value* widenToFloat(Value* v, SymbolType st, llvm::Type* ty){
 }
 
 Value* widenToSInt(Value* v, SymbolType st, llvm::Type* ty){
-  if (st == I1) return llvm_builder->CreateZExt(v, ty, "widen");
+  if (st == I1)  return llvm_builder->CreateZExt(v, ty, "widen");
   if (st == I8) return llvm_builder->CreateSExt(v, ty, "widen");
   if (st == U8) return llvm_builder->CreateZExt(v, ty, "widen");
   if (st == U16) return llvm_builder->CreateZExt(v, ty, "widen");
@@ -369,12 +369,13 @@ void widen_expression(Expression* lhsexp, Expression* rhsexp, Value* lhsval, Val
       default:
         if(is_signed_int_type(lhsexp->type_info.st.stype)){
           *newrhs = widenToSInt(rhsval, rhsexp->type_info.st.stype, getType(lhsexp->type_info.st.stype, 0));
+          // cout << "widened" << endl;
         }
         else if(is_unsigned_int_type(lhsexp->type_info.st.stype)){
           *newrhs = widenToUInt(rhsval, rhsexp->type_info.st.stype, getType(lhsexp->type_info.st.stype, 0));
         }
     }
-    lhsexp->type_info.st.stype = rhsexp->type_info.st.stype;
+    rhsexp->type_info.st.stype = lhsexp->type_info.st.stype;
     *newlhs = lhsval;
   }
 
@@ -704,8 +705,11 @@ Value *BinaryExpression::codegen() {
       return nullptr;
     }
   }
+
   Value *oldL = lhs->codegen();
+  // cout<<"lhs gened" << endl;
   Value *oldR = rhs->codegen();
+  // cout<<"rhs gened" << endl;
   // TODO type check. error if types don't match
 
   if (!oldL || !oldR)
@@ -728,6 +732,14 @@ Value *BinaryExpression::codegen() {
     R = oldR;
     L = oldL;
   }
+
+  // if (L) {
+  //   cout << "lhs exists";
+  // }
+
+  // if(R) {
+  //   cout << "rhs exists";
+  // }
 
   type_info.is_ref = false;
   type_info.st.ptr_depth = 0;    // for now
@@ -878,7 +890,7 @@ llvm::Value* FunctionInvocationExpression::codegen(){
   for(int i = 0; i < num_params; i++){
     argsV.push_back((*params)[i]->codegen());                   // type check arg types
   }
-  
+  // cout<<"pushed params"<<endl;
   if(func->getFunctionType()->getReturnType()->isVoidTy()){
     return llvm_builder->CreateCall(func, argsV);
   }

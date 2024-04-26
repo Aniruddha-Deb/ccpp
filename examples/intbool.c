@@ -1,6 +1,11 @@
 // #include <complex.h>
 int printf(const char* fmt, ...);
 
+int getint(int a){
+    return a;
+}
+
+
 int main() {
     _Bool bool = 1;
     int a = 2, b = 5;
@@ -12,6 +17,8 @@ int main() {
     if (nz) printf("Negative Zero!\n");
     if (notz) printf("Not zero\n");
     if (a & b) printf("bitwise and\n");
+    int x = getint(1) + (getint(2) < getint(1));
+    printf("helloworld %d\n", x);
 
     return 0;
 }
