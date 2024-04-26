@@ -602,16 +602,16 @@ Constant* Literal::codegen() {
       return ConstantInt::get(*llvm_ctx, APInt(32, data.i));
     case LT_INT64:
       type_info.st.stype = I64;
-      return ConstantInt::get(*llvm_ctx, APInt(64, data.i));
+      return ConstantInt::get(*llvm_ctx, APInt(64, data.l));
     case LT_UINT64:
       type_info.st.stype = U64;
-      return ConstantInt::get(*llvm_ctx, APInt(64, data.i));
+      return ConstantInt::get(*llvm_ctx, APInt(64, data.l));
     case LT_SHORT:
       type_info.st.stype = I16;
       return ConstantInt::get(*llvm_ctx, APInt(16, data.i));
     case LT_CHAR:
       type_info.st.stype = I8;
-      return ConstantInt::get(*llvm_ctx, APInt(8, data.i));
+      return ConstantInt::get(*llvm_ctx, APInt(8, data.c));
     case LT_FLOAT:
       type_info.st.stype = FP32;
       return ConstantFP::get(llvm::Type::getFloatTy(*llvm_ctx), APFloat(data.f));
