@@ -409,19 +409,39 @@ LiteralType symbol_to_literal(SymbolType st){
 
 void assign_literals(SymbolType lhstype, Literal* rhslit) {
   if (rhslit->ltype == LT_STRING) {
+
     return;
   }
   if (get_rank(rhslit->ltype) > get_symbol_rank(lhstype)) {
-    switch (rhslit->ltype) {
-      case LT_DOUBLE: 
-        if (lhstype == FP32) {
-          rhslit->data.f = float(rhslit->data.d); 
-        }
-        else{
-          rhslit->data.l = floor(rhslit->data.d);
-        }
-      break;
-      case LT_FLOAT: rhslit->data.l = long(rhslit->data.f); break;
+    if (lhstype == I1) {
+      switch (rhslit->ltype) {
+        case LT_DOUBLE: 
+          rhslit->data.l = rhslit->data.d != 0;
+          break;
+        case LT_FLOAT: 
+          rhslit->data.l = (rhslit->data.f != 0); 
+          break;
+        default:
+          rhslit->data.l = (rhslit->data.l != 0);
+          break;
+      }
+    }
+    else{
+      switch (rhslit->ltype) {
+        case LT_DOUBLE: 
+          if (lhstype == FP32) {
+            rhslit->data.f = float(rhslit->data.d); 
+          }
+          else{
+            rhslit->data.l = floor(rhslit->data.d);
+          }
+        break;
+        case LT_FLOAT: 
+   
+          rhslit->data.l = long(rhslit->data.f); 
+          
+          break;
+      }
     }
     rhslit->ltype = symbol_to_literal(lhstype);
     // cout << rhslit->data.l << endl;

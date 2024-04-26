@@ -207,6 +207,7 @@ SymbolType typespecs2stg(std::set<TypeSpecifier> type_specs) {
   if (type_specs.find(TS_SHORT) != type_specs.end()) return I16;
   if (type_specs.find(TS_LONG) != type_specs.end()) return I64;
   if (type_specs.find(TS_VOID) != type_specs.end()) return VD;
+  if (type_specs.find(TS_BOOL) != type_specs.end()) return I1;
   return I32;
 }
 
@@ -379,6 +380,20 @@ void widen_expression(Expression* lhsexp, Expression* rhsexp, Value* lhsval, Val
 
 }
 
+Value* narrowToBool(Value* rhsval, SymbolType st, llvm::Type* ty){
+  if (st == I1) return rhsval;
+  if (st == I8) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == U8) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == I16) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == U16) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == I32) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == U32) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == I64) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == U64) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
+  if (st == FP32) return llvm_builder->CreateFCmpONE(rhsval, ConstantFP::get(ty, 0.0));
+  if (st == FP64) return llvm_builder->CreateFCmpONE(rhsval, ConstantFP::get(ty, 0.0));
+  // if (st == FP64) return llvm_builder->CreateFPTrunc(v, ty, "widen");
+}
 
 Value* convertForAssignment(Expression* lhsexp, Expression* rhsexp, Value* rhsval) {
   Value* newrhs;
@@ -395,6 +410,9 @@ Value* convertForAssignment(Expression* lhsexp, Expression* rhsexp, Value* rhsva
         }
         else if(is_unsigned_int_type(lhsexp->type_info.st.stype)){
           newrhs = widenOrNarrowToUInt(rhsval, rhsexp->type_info.st.stype, getType(lhsexp->type_info.st.stype, 0));
+        }
+        else if(is_bool_type(lhsexp->type_info.st.stype)){
+          newrhs = narrowToBool(rhsval, rhsexp->type_info.st.stype, getType(rhsexp->type_info.st.stype, 0));
         }
   }
   return newrhs;
@@ -416,6 +434,10 @@ Value* convertForInit(SymbolType lhstype, Expression* rhsexp, Value* rhsval) {
         else if(is_unsigned_int_type(lhstype)){
           newrhs = widenOrNarrowToUInt(rhsval, rhsexp->type_info.st.stype, getType(lhstype, 0));
         }
+         else if(is_bool_type(lhstype)){
+          newrhs = narrowToBool(rhsval, rhsexp->type_info.st.stype, getType(rhsexp->type_info.st.stype, 0));
+        }
+        
   }
   return newrhs;
 }
@@ -673,6 +695,7 @@ Value *BinaryExpression::codegen() {
     }
     else if ((rhs->type_info.st.ptr_depth == 0) && (lhs->type_info.st.ptr_depth == 0) && lhs->type_info.is_ref){
       Value* newrhs = convertForAssignment(lhs, rhs, R);
+      rhs->type_info.st = lhs->type_info.st;
       llvm_builder->CreateStore(newrhs, A);
       return newrhs;    // should i return newrhs or R. if R then don't update type info of expression ig.
     }
@@ -972,7 +995,9 @@ Value* Identifier::codegen(){
 
 Value *IfStatement::codegen() {
   Value *CondV = cond->codegen();
-  if (!CondV || cond->type_info.st.stype != I1)
+  CondV = narrowToBool(CondV, cond->type_info.st.stype, getType(cond->type_info.st.stype, 0));
+  cond->type_info.st.stype = I1;
+  if (!CondV || cond->type_info.st.stype != I1) // sus
     return nullptr;
 
 

@@ -21,6 +21,7 @@ SymbolType typespecs2st(std::set<TypeSpecifier> type_specs) {
   }
   if (type_specs.find(TS_SHORT) != type_specs.end()) return I16;
   if (type_specs.find(TS_LONG) != type_specs.end()) return I64;
+  if (type_specs.find(TS_BOOL) != type_specs.end()) return I1;
   if (type_specs.find(TS_VOID) != type_specs.end()) return VD;
   return I32;
 }
