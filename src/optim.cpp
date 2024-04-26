@@ -37,8 +37,24 @@ Statement* IfStatement::const_prop(){
     Expression* exp = cond->const_prop();
     // cond = exp;    // delete old exp?
     cond = FoldConstants(exp);
+
+    Literal* litcond = dynamic_cast<Literal*> (cond);
+
+    if (litcond) {
+        if (litcond->data.l) {
+            false_branch = nullptr;
+        }
+        else{
+            true_branch = nullptr;
+        }
+    }
     // constant_table.clear_values();
+
+    if(true_branch) {
     true_branch = true_branch->const_prop();
+    }
+
+    
     
     if (false_branch) {
         constant_table.clear_values();

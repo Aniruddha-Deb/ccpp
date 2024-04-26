@@ -19,6 +19,12 @@ int main() {
     // k = 15;
     // u = k / c;
     // d = 8.2;
+    if ( c > l) {
+        return 0;
+    }
+    else{
+         printf("%d %ld %u %u %u\n", a, l, c, k, u);
+    }
     printf("%d %ld %u %u %u\n", a, l, c, k, u);
     printf("%lf\n", d);
     return 0;

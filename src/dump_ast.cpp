@@ -185,11 +185,22 @@ string IfStatement::dump_ast(string prefix) {
   ss << "if\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n";
 
   if (false_branch) {
-    ss << prefix << "`- true_branch: " << true_branch->dump_ast(prefix + "| ")
-       << "\n";
+    if (true_branch) {
+      ss << prefix << "`- true_branch: " << true_branch->dump_ast(prefix + "| ")
+        << "\n";
+    }
+    else{
+      ss << prefix << "`- true_branch removed " << "\n";
+    }
     ss << prefix << "`- false_branch: " << false_branch->dump_ast(prefix + " ");
   } else {
-    ss << prefix << "`- true_branch: " << true_branch->dump_ast(prefix + " ");
+    if (true_branch) {
+      ss << prefix << "`- true_branch: " << true_branch->dump_ast(prefix + "| ")
+        << "\n";
+    }
+    else{
+      ss << prefix << "`- true_branch removed " << "\n";
+    }
   }
 
   return ss.str();

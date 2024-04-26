@@ -591,6 +591,9 @@ Constant* Literal::codegen() {
   llvm::APInt zero(32, 0);
   llvm::APInt one(32, 0);
   switch(ltype) {
+    case LT_BOOL:
+      type_info.st.stype = I1;
+      return ConstantInt::get(*llvm_ctx, APInt(1, data.i));
     case LT_INT32:
       type_info.st.stype = I32;
       return ConstantInt::get(*llvm_ctx, APInt(32, data.i));
@@ -975,42 +978,54 @@ Value *IfStatement::codegen() {
 
   // Create blocks for the then and else cases.  Insert the 'then' block at the
   // end of the function.
-  BasicBlock *ThenBB = BasicBlock::Create(*llvm_ctx, "then", func);
-  BasicBlock *ElseBB = BasicBlock::Create(*llvm_ctx, "else");
-  BasicBlock *MergeBB = BasicBlock::Create(*llvm_ctx, "ifcont");
+ 
 
-  llvm_builder->CreateCondBr(CondV, ThenBB, ElseBB);
+  if (true_branch) {
+    BasicBlock *ThenBB = BasicBlock::Create(*llvm_ctx, "then", func);
+    BasicBlock *ElseBB = BasicBlock::Create(*llvm_ctx, "else");
+    BasicBlock *MergeBB = BasicBlock::Create(*llvm_ctx, "ifcont");
+    llvm_builder->CreateCondBr(CondV, ThenBB, ElseBB);
 
-  // Emit then value.
-  llvm_builder->SetInsertPoint(ThenBB);
+    llvm_builder->SetInsertPoint(ThenBB);
 
-  Value *ThenV = true_branch->codegen();
+    if (true_branch) {
+      Value *ThenV = true_branch->codegen();
+    }
 
-  llvm_builder->CreateBr(MergeBB);
-  // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
-  ThenBB = llvm_builder->GetInsertBlock();
+    llvm_builder->CreateBr(MergeBB);
+    ThenBB = llvm_builder->GetInsertBlock();
 
-  // Emit else block.
-  func->getBasicBlockList().push_back(ElseBB);
-  llvm_builder->SetInsertPoint(ElseBB);
-  Value *ElseV = nullptr;
-  if(false_branch){
-    cdebug << "non empty else" << endl;
-    ElseV = false_branch->codegen();
+    func->getBasicBlockList().push_back(ElseBB);
+    llvm_builder->SetInsertPoint(ElseBB);
+    Value *ElseV = nullptr;
+    if(false_branch){
+      cdebug << "non empty else" << endl;
+      ElseV = false_branch->codegen();
+    }
+    else{
+      cdebug << "empty else" << endl;
+    }
+
+    
+
+    llvm_builder->CreateBr(MergeBB);
+    ElseBB = llvm_builder->GetInsertBlock();
+
+    func->getBasicBlockList().push_back(MergeBB);
+    llvm_builder->SetInsertPoint(MergeBB);
   }
   else{
-    cdebug << "empty else" << endl;
+    Value *ElseV = nullptr;
+    if(false_branch){
+      cdebug << "non empty else" << endl;
+      ElseV = false_branch->codegen();
+    }
+    else{
+      cdebug << "empty else" << endl;
+    }
   }
 
   
-
-  llvm_builder->CreateBr(MergeBB);
-  // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-  ElseBB = llvm_builder->GetInsertBlock();
-
-  // Emit merge block.
-  func->getBasicBlockList().push_back(MergeBB);
-  llvm_builder->SetInsertPoint(MergeBB);
   // PHINode *PN = llvm_builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "iftmp");
 
   // PN->addIncoming(ThenV, ThenBB);
