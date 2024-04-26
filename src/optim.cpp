@@ -136,8 +136,10 @@ Statement* DeclarationStatement::const_prop(){
                 // cout << (*decl->decl_list)[i]->ident->ident_info.idx << endl;
                 Literal* initlit = dynamic_cast<Literal*> (((*(decl->decl_list))[i]->init_expr)->copy_exp());
                 if (!(*decl->decl_list)[i]->ident->ident_info.ptr_depth){
+                    cout << (*decl->decl_list)[i]->ident->name<<endl;
                     assign_literals(((*decl->decl_list)[i]->ident->ident_info.stype), (initlit));
                     constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx,(initlit));
+                    cout<<initlit->ltype << " "<<initlit->data.d << endl;
                 }
                 else{
                      constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, nullptr) ;

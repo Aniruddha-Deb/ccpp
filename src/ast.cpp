@@ -379,14 +379,29 @@ int get_symbol_rank(SymbolType st) {
 void widen_literals(Literal* lhslit, Literal* rhslit) {
   if (get_rank(rhslit->ltype) > get_rank(lhslit->ltype)) {
     switch (rhslit->ltype) {
-      case LT_DOUBLE: lhslit->data.d = double(lhslit->data.l); break;
+      case LT_DOUBLE: 
+        if(lhslit->ltype == LT_FLOAT) {
+          lhslit->data.d = double(lhslit->data.f);
+        }
+        else{
+          lhslit->data.d = double(lhslit->data.l);
+        }
+        break;
+      
       case LT_FLOAT: lhslit->data.f = float(lhslit->data.l); break;
     }
     lhslit->ltype = rhslit->ltype;
   }
   else if (get_rank(lhslit->ltype) > get_rank(rhslit->ltype)) {
     switch (lhslit->ltype) {
-      case LT_DOUBLE: rhslit->data.d = double(rhslit->data.l); break;
+      case LT_DOUBLE: 
+        if(rhslit->ltype == LT_FLOAT) {
+          rhslit->data.d = double(rhslit->data.f);
+        }
+        else{
+          rhslit->data.d = double(rhslit->data.l);
+        }
+        break;
       case LT_FLOAT: rhslit->data.f = float(rhslit->data.l); break;
     }
     rhslit->ltype = lhslit->ltype;
@@ -431,6 +446,7 @@ void assign_literals(SymbolType lhstype, Literal* rhslit) {
         case LT_DOUBLE: 
           if (lhstype == FP32) {
             rhslit->data.f = float(rhslit->data.d); 
+            cout << rhslit->data.f << endl;
           }
           else{
             rhslit->data.l = floor(rhslit->data.d);
@@ -448,7 +464,14 @@ void assign_literals(SymbolType lhstype, Literal* rhslit) {
   }
   else if (get_symbol_rank(lhstype) > get_rank(rhslit->ltype)) {
     switch (lhstype) {
-      case FP64: rhslit->data.d = double(rhslit->data.l); break;
+      case FP64: 
+        if(rhslit->ltype == LT_FLOAT) {
+          rhslit->data.d = double(rhslit->data.f);
+        }
+        else{
+          rhslit->data.d = double(rhslit->data.l);
+        }
+        break;
       case FP32: rhslit->data.f = float(rhslit->data.l); break;
     }
     rhslit->ltype = symbol_to_literal(lhstype);

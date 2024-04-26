@@ -16,6 +16,14 @@ entry:
   ret i32 %a
 }
 
+define float @getfloat(float %v0) {
+entry:
+  %l0 = alloca float, align 4
+  store float %v0, float* %l0, align 4
+  %f = load float, float* %l0, align 4
+  ret float %f
+}
+
 define i32 @main() {
 entry:
   %l6 = alloca i32, align 4
@@ -41,34 +49,48 @@ else:                                             ; preds = %entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  br i1 false, label %then1, label %else3
+  %calltmp1 = call float @getfloat(float -0.000000e+00)
+  %widen = fpext float %calltmp1 to double
+  %temp = fadd double %widen, 1.000000e+00
+  %calltmp2 = call float @getfloat(float 1.000000e+00)
+  %calltmp3 = call float @getfloat(float 1.000000e+00)
+  %temp4 = fcmp oeq float %calltmp2, %calltmp3
+  %widen5 = uitofp i1 %temp4 to double
+  %temp6 = fadd double %temp, %widen5
+  %0 = fcmp one double %temp6, 0.000000e+00
+  br i1 %0, label %then7, label %else9
 
-then1:                                            ; preds = %ifcont
-  %calltmp2 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.1, i32 0, i32 0))
-  br label %ifcont4
+then7:                                            ; preds = %ifcont
+  %calltmp8 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([16 x i8], [16 x i8]* @.str.1, i32 0, i32 0))
+  br label %ifcont10
 
-else3:                                            ; preds = %ifcont
-  br label %ifcont4
+else9:                                            ; preds = %ifcont
+  br label %ifcont10
 
-ifcont4:                                          ; preds = %else3, %then1
-  br i1 true, label %then5, label %else7
+ifcont10:                                         ; preds = %else9, %then7
+  %calltmp11 = call float @getfloat(float 1.000000e+00)
+  %widen12 = fpext float %calltmp11 to double
+  %temp13 = fadd double %widen12, 1.000000e+00
+  %1 = fcmp one double %temp13, 0.000000e+00
+  br i1 %1, label %then14, label %else16
 
-then5:                                            ; preds = %ifcont4
-  %calltmp6 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.2, i32 0, i32 0))
-  br label %ifcont8
+then14:                                           ; preds = %ifcont10
+  %calltmp15 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.2, i32 0, i32 0))
+  br label %ifcont17
 
-else7:                                            ; preds = %ifcont4
-  br label %ifcont8
+else16:                                           ; preds = %ifcont10
+  br label %ifcont17
 
-ifcont8:                                          ; preds = %else7, %then5
-  %calltmp9 = call i32 @getint(i32 2)
-  %calltmp10 = call i32 @getint(i32 1)
-  %temp = icmp slt i32 %calltmp9, %calltmp10
-  %widen = zext i1 %temp to i32
-  %temp11 = or i32 %widen, 12
-  store i32 %temp11, i32* %l6, align 4
+ifcont17:                                         ; preds = %else16, %then14
+  %calltmp18 = call i32 @getint(i32 2)
+  %calltmp19 = call i32 @getint(i32 1)
+  %temp20 = icmp sgt i32 %calltmp18, %calltmp19
+  %calltmp21 = call i32 @getint(i32 2)
+  %widen22 = zext i1 %temp20 to i32
+  %temp23 = add i32 %widen22, %calltmp21
+  store i32 %temp23, i32* %l6, align 4
   %x = load i32, i32* %l6, align 4
-  %calltmp12 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.3, i32 0, i32 0), i32 %x)
+  %calltmp24 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @.str.3, i32 0, i32 0), i32 %x)
   ret i32 0
 }
 
