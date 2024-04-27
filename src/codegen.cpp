@@ -690,11 +690,11 @@ Value *BinaryExpression::codegen() {
     Value* A = V;
     type_info.st = lhs->type_info.st;
     type_info.is_ref = false;                       
-    if((lhs->type_info.st.stype == rhs->type_info.st.stype) && (lhs->type_info.st.ptr_depth == rhs->type_info.st.ptr_depth) && (lhs->type_info.is_ref)){
+    if(( get_rank(lhs->type_info.st.stype) == get_rank(rhs->type_info.st.stype)) && (lhs->type_info.st.ptr_depth == rhs->type_info.st.ptr_depth) && (lhs->type_info.is_ref)){   // comparing rank as they are internally the same type
       llvm_builder->CreateStore(R, A);
       return R;
     }
-    else if ((rhs->type_info.st.ptr_depth == 0) && (lhs->type_info.st.ptr_depth == 0) && lhs->type_info.is_ref){
+    else if ((rhs->type_info.st.ptr_depth == 0) && (lhs->type_info.st.ptr_depth == 0) && lhs->type_info.is_ref){       // widening/narrowing only if rhs is not a pointer
       Value* newrhs = convertForAssignment(lhs, rhs, R);
       rhs->type_info.st = lhs->type_info.st;
       llvm_builder->CreateStore(newrhs, A);
@@ -1076,26 +1076,32 @@ Value *IfStatement::codegen() {
 Value* WhileStatement::codegen(){
   llvm::Function *func = llvm_builder->GetInsertBlock()->getParent();
   // BasicBlock *Cond = llvm_builder->GetInsertBlock();
-  BasicBlock *CondBB = BasicBlock::Create(*llvm_ctx, "loop_cond", func);
-  BasicBlock *LoopBB = BasicBlock::Create(*llvm_ctx, "loop_body", func);
-  BasicBlock *AfterBB = BasicBlock::Create(*llvm_ctx, "afterloop", func);
 
-  // Insert an explicit fall through from the current block to the LoopBB.
-  llvm_builder->CreateBr(CondBB);
+  if (stmt) {
+    BasicBlock *CondBB = BasicBlock::Create(*llvm_ctx, "loop_cond", func);
+    BasicBlock *LoopBB = BasicBlock::Create(*llvm_ctx, "loop_body", func);
+    BasicBlock *AfterBB = BasicBlock::Create(*llvm_ctx, "afterloop", func);
 
-  // Start insertion in LoopBB.
-  llvm_builder->SetInsertPoint(CondBB);
+    // Insert an explicit fall through from the current block to the LoopBB.
+    llvm_builder->CreateBr(CondBB);
 
-  // Compute the end condition.
-  Value *Cond = cond->codegen();
-  llvm_builder->CreateCondBr(Cond, LoopBB, AfterBB);
+    // Start insertion in LoopBB.
+    llvm_builder->SetInsertPoint(CondBB);
 
-  llvm_builder->SetInsertPoint(LoopBB);
+    // Compute the end condition.
+    Value *Cond = cond->codegen();
+    llvm_builder->CreateCondBr(Cond, LoopBB, AfterBB);
 
-  stmt->codegen();
-  llvm_builder->CreateBr(CondBB);
+    llvm_builder->SetInsertPoint(LoopBB);
 
-  llvm_builder->SetInsertPoint(AfterBB);
+    stmt->codegen();
+    llvm_builder->CreateBr(CondBB);
+
+    llvm_builder->SetInsertPoint(AfterBB);
+  }
+  else{
+    cond->codegen();
+  }
 
  
   return nullptr;

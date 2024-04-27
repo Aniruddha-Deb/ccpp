@@ -33,6 +33,15 @@ Statement* BlockStatement::const_prop(){
     return this;
 }
 
+
+void BlockStatement::remove_pointers(){
+    for(int i = 0; i  < this->size(); i++) {
+        (*this)[i]->remove_pointers();
+    }
+    return;
+}
+
+
 Statement* IfStatement::const_prop(){
     Expression* exp = cond->const_prop();
     // cond = exp;    // delete old exp?
@@ -41,71 +50,74 @@ Statement* IfStatement::const_prop(){
     Literal* litcond = dynamic_cast<Literal*> (cond);
 
     if (litcond) {
+        assign_literals(I1, litcond);  // convert to bool
         if (litcond->data.l) {
             false_branch = nullptr;
         }
         else{
             true_branch = nullptr;
         }
+        cond = litcond;   // although this conversion is taken care of during codegen
     }
-    // constant_table.clear_values();
+
 
     if(true_branch) {
-    true_branch = true_branch->const_prop();
+        true_branch = true_branch->const_prop();
+        constant_table.clear_values();
     }
 
     
     
     if (false_branch) {
-        constant_table.clear_values();
         false_branch = false_branch->const_prop();
+        constant_table.clear_values();
     }
     
-    constant_table.clear_values();
+    
     return this;
 }
 
+void IfStatement::remove_pointers(){
+    cond->remove_pointers();
+    if (true_branch){
+        true_branch->remove_pointers();
+    }
+    if (false_branch){
+        false_branch->remove_pointers();
+    }
+}
+
+
+
+
 Statement* WhileStatement::const_prop(){
+    cond->remove_pointers();
+    stmt->remove_pointers();
+
     constant_table.clear_values();
+
     Expression* exp = cond->const_prop();
-    // cond = exp;    // delete old exp?
     cond = FoldConstants(exp);
-    // constant_table.clear_values();
+    Literal* litcond = dynamic_cast<Literal*>(cond);
+    if (litcond) {
+        assign_literals(I1, litcond);  // convert to bool
+        if(!litcond->data.l){
+            stmt = nullptr;
+        }
+        cond = litcond;
+    }
     stmt = stmt->const_prop();
     constant_table.clear_values();
     return this;
 }
 
+void WhileStatement::remove_pointers(){
+    cond->remove_pointers();
+    stmt->remove_pointers();
+    return;
+}
+
 Statement* ExpressionStatement::const_prop(){
-    // BlockStatement* b = new BlockStatement();
-    // if (BinaryExpression* binexp = dynamic_cast<BinaryExpression*> (expr)){
-    //     if (binexp->op == OP_ASSIGN) {
-    //         expr = expr->flatten_tree(b);
-    //     }
-    //     else{
-    //         expr = expr->flatten_tree(b);
-    //         b->push_back(this);
-    //     }
-    // }
-    // else {
-    //     expr = expr->flatten_tree(b);
-    //     b->push_back(this);
-    // }
-
-    // // cout << b->dump_ast("") << endl;
-
-    // for(int i = 0; i < (b->size())/2; i++){
-    //     Statement* temp = (*b)[i];
-    //     (*b)[i] = (*b)[b->size() - i - 1]; 
-    //     (*b)[b->size() - i - 1] = temp;
-    // }
-
-    // for(int i = 0; i < b->size(); i++){
-    //     ExpressionStatement* es = dynamic_cast<ExpressionStatement*>((*b)[i]);
-    //     es->expr = es->expr->const_prop();
-    //     es->expr = FoldConstants(es->expr);
-    //     cout << "set" << endl;
-    // }
 
     
     expr = expr->const_prop();  // delete old exp?
@@ -154,6 +166,18 @@ Statement* DeclarationStatement::const_prop(){
     return this;
 }
 
+void DeclarationStatement::remove_pointers(){
+    for(int i = 0; i < (decl->decl_list)->size(); i++){
+        if((*(decl->decl_list))[i]->init_expr){
+             // cout << "Const ";
+            (*(decl->decl_list))[i]->init_expr->remove_pointers();
+        }
+            
+        constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, dynamic_cast<Literal*> ((*decl->decl_list)[i]->init_expr) );   // should i remove this????
+    }
+    return;
+}
+
 Statement* ReturnStatement::const_prop(){
     if (ret_expr) {
         Expression* exp = ret_expr->const_prop(); // delete old exp?
@@ -164,6 +188,12 @@ Statement* ReturnStatement::const_prop(){
         }
     }
     return this;
+}
+
+void ReturnStatement::remove_pointers(){
+    if(ret_expr){
+        ret_expr->remove_pointers();
+    }
 }
 
 Expression* Identifier::const_prop(){
@@ -214,6 +244,12 @@ Expression* BinaryExpression::const_prop(){
     return  this;  // copy current exp and return so old version can be deleted
 }
 
+void BinaryExpression::remove_pointers(){
+    rhs->remove_pointers();
+    lhs->remove_pointers();
+    return;
+}
+
 Expression* UnaryExpression::const_prop(){
     if(op == OP_AND){                           // check for all assignment types
         // cout<<"POINTER" <<endl;
@@ -233,6 +269,23 @@ Expression* UnaryExpression::const_prop(){
     }
 }
 
+void UnaryExpression::remove_pointers(){
+    if(op == OP_AND){                           
+        Identifier* ident = dynamic_cast<Identifier*> (expr);
+        if (ident) {
+            constant_table.pointer_taken(ident->ident_info.idx);
+        }
+        else{
+            expr->remove_pointers();
+        }
+        return;
+    }
+    else{
+        expr->remove_pointers();
+        return;   // copy current exp and return so old version can be deleted
+    }
+}
+
 Expression* FunctionInvocationExpression::const_prop(){
     if (params) {
         for(int i = 0; i < params->size(); i++){
@@ -243,6 +296,17 @@ Expression* FunctionInvocationExpression::const_prop(){
     }
     return this;
 }
+
+
+void FunctionInvocationExpression::remove_pointers(){
+    if (params) {
+        for(int i = 0; i < params->size(); i++){
+            (*params)[i]->remove_pointers();
+        }
+    }
+    return;
+}
+
 
 void TranslationUnit::const_prop() {
   
@@ -329,4 +393,26 @@ Expression* Expression::flatten_tree(Statement* b){
 }
 
 
+
+void Expression::remove_pointers(){
+    return;
 }
+
+void Statement::remove_pointers(){
+    return;
+}
+
+void ExpressionStatement::remove_pointers(){
+    expr->remove_pointers();
+    return;
+}
+
+
+
+}
+
+
+
+
+
+

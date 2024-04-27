@@ -219,8 +219,14 @@ string CaseStatement::dump_ast(string prefix) {
 string WhileStatement::dump_ast(string prefix) {
   cdebug << "WhileStatement::dump_ast: " << endl;
   stringstream ss;
-  ss << "while\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n"
-     << prefix << "`- stmt: " << stmt->dump_ast(prefix + " ");
+  if (stmt){
+    ss << "while\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n"
+      << prefix << "`- stmt: " << stmt->dump_ast(prefix + " ");
+  }
+  else{
+    ss << "while\n" << prefix << "`- cond: " << cond->dump_ast(prefix + "| ") << "\n"
+      << prefix << "`- stmt: removed";
+  }
   return ss.str();
 }
 

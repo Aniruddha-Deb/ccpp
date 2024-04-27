@@ -5,7 +5,7 @@ int main(){
     char *d = "World";
     char *e = "Multiple";
     char *f = "String";
-    char *g = "Literals";
+    signed char *g = "Literals";
     g = "NO";
     printf("%s %s %s %s %s\n", c, d, e, f, g);
     return 0;

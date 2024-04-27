@@ -148,6 +148,7 @@ struct Node {
 struct Statement : Node {
   virtual llvm::Value* codegen();
   virtual Statement* const_prop();              // moved decl of statement
+  virtual void remove_pointers();
   virtual ~Statement() {}
 };
 
@@ -169,7 +170,8 @@ struct Expression : Node {
   // virtual llvm::Value* assign(Expression* R);         // codegen when lvalue
   virtual Expression* flatten_tree(Statement*);
   virtual Expression* const_prop();
-  virtual llvm::Value* get_address();                                // use this to replace assign          
+  virtual llvm::Value* get_address();                                // use this to replace assign  
+  virtual void remove_pointers();        
   virtual Expression* copy_exp();     
 
 };
@@ -185,6 +187,7 @@ struct Identifier : Expression {
   Expression* flatten_tree(Statement*) override;
   Expression* const_prop() override;
   llvm::Value* get_address() override;
+  // void remove_pointers() override;
   void scopify() override;
 };
 
@@ -218,6 +221,7 @@ struct FunctionInvocationExpression : Expression {
   Expression* flatten_tree(Statement*) override;
   Expression* copy_exp() override;
   void scopify() override;
+  void remove_pointers() override;
   ~FunctionInvocationExpression();
 };
 
@@ -233,6 +237,7 @@ struct BinaryExpression : Expression {
   Expression* flatten_tree(Statement*) override;
   llvm::Value* codegen() override;
   Expression* copy_exp() override;
+  void remove_pointers() override;
   ~BinaryExpression();
 };
 
@@ -247,6 +252,7 @@ struct UnaryExpression : Expression {
   Expression* flatten_tree(Statement*) override;
   string dump_ast(string prefix) override;                      // Add assign method
   Expression* copy_exp() override;
+  void remove_pointers() override;
   void scopify() override;
 };
 
@@ -366,6 +372,7 @@ struct DeclarationStatement : Statement {
   llvm::Value* codegen() override;
   Statement* const_prop() override;
   llvm::Value* globalgen();
+  void remove_pointers() override;
   ~DeclarationStatement();
 };
 
@@ -377,6 +384,7 @@ struct ExpressionStatement : Statement {
   void scopify() override;
   Statement* const_prop() override;
   llvm::Value* codegen() override;
+  void remove_pointers() override;
   ~ExpressionStatement();
 };
 
@@ -392,6 +400,7 @@ struct IfStatement : Statement {
   void scopify() override;
   Statement* const_prop() override;
   llvm::Value* codegen() override;
+  void remove_pointers() override;
   ~IfStatement();
 };
 
@@ -417,6 +426,7 @@ struct WhileStatement : Statement {
   void scopify() override;
   Statement* const_prop() override;
   llvm::Value* codegen() override;
+  void remove_pointers() override;
   ~WhileStatement();
 };
 
@@ -441,6 +451,7 @@ struct ReturnStatement : Statement {
   void scopify() override;
   Statement* const_prop() override;
   llvm::Value* codegen() override;
+  void remove_pointers() override;
   ~ReturnStatement();
 };
 
@@ -471,6 +482,7 @@ struct BlockStatement : Statement, vector<Statement *> {
   void scopify() override;
   Statement* const_prop() override;
   llvm::Value* codegen() override;
+  void remove_pointers() override;
   ~BlockStatement();
 };
 
