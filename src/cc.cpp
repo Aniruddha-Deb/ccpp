@@ -5,6 +5,7 @@
 #include <fstream>
 #include "ast.hpp"
 #include "error.hpp"
+#include "debug.hpp"
 #include "c.tab.hpp"
 #include "symtab.hpp"
 #include "argparse.hpp"
@@ -57,11 +58,14 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  cdebug << "scopify done" << endl;
+
   tu->const_prop();
+
+  cdebug << "optimization done" << endl;
 
   // tu->dump_ast();
 
-  std::cout << "Done optimizing" << std::endl;
   // std::cout << tu->dump_ast("") << std::endl;
 
   // printf("retv = %d\n", ret);

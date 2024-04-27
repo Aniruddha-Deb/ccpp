@@ -176,6 +176,7 @@ string DeclarationStatement::dump_ast(string prefix) {
 
 string ExpressionStatement::dump_ast(string prefix) {
   cdebug << "ExpressionStatement::dump_ast: " << endl;
+  if (!expr) return "no expr";
   return "expr: " + expr->dump_ast(prefix);
 }
 

@@ -59,7 +59,7 @@ static std::unique_ptr<llvm::IRBuilder<>> llvm_builder;
 static std::map<std::string, AllocaInst*> llvm_st;
 static std::map<std::string, GlobalVariable*> global_st;
 static std::map<std::string, llvm::Function*> func_st;
-
+static SymbolInfo func_ret_st;
 
 bool is_signed_int_type(SymbolType ty) {
   return ty == I8 || ty == I16 || ty == I32 || ty == I64;
@@ -381,18 +381,18 @@ void widen_expression(Expression* lhsexp, Expression* rhsexp, Value* lhsval, Val
 
 }
 
-Value* narrowToBool(Value* rhsval, SymbolType st, llvm::Type* ty){
-  if (st == I1) return rhsval;
-  if (st == I8) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == U8) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == I16) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == U16) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == I32) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == U32) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == I64) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == U64) return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0));
-  if (st == FP32) return llvm_builder->CreateFCmpONE(rhsval, ConstantFP::get(ty, 0.0));
-  if (st == FP64) return llvm_builder->CreateFCmpONE(rhsval, ConstantFP::get(ty, 0.0));
+Value* narrowToBool(Value* rhsval, SymbolType& st, llvm::Type* ty){
+  if (st == I1)   { st = I1; return rhsval; }
+  if (st == I8)   { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == U8)   { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == I16)  { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == U16)  { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == I32)  { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == U32)  { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == I64)  { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == U64)  { st = I1; return llvm_builder->CreateICmpNE(rhsval, ConstantInt::get(ty, 0)); }
+  if (st == FP32) { st = I1; return llvm_builder->CreateFCmpONE(rhsval, ConstantFP::get(ty, 0.0)); }
+  if (st == FP64) { st = I1; return llvm_builder->CreateFCmpONE(rhsval, ConstantFP::get(ty, 0.0)); }
   // if (st == FP64) return llvm_builder->CreateFPTrunc(v, ty, "widen");
 }
 
@@ -599,6 +599,7 @@ Value* Statement::codegen(){
 }
 
 Value* ExpressionStatement::codegen(){
+  if (!expr) return nullptr;
   return expr->codegen();
 }
 
@@ -683,8 +684,6 @@ Value* Identifier::get_address(){
 
 Value *BinaryExpression::codegen() {
   if (op == OP_ASSIGN){
-
- 
     Value* R = rhs->codegen();
     Value* V = (lhs->get_address());
     Value* A = V;
@@ -701,7 +700,7 @@ Value *BinaryExpression::codegen() {
       return newrhs;    // should i return newrhs or R. if R then don't update type info of expression ig.
     }
     else{      
-      cout<<"Assignment type mismatch";
+      ehdl::err("Assignment type mismatch", pos);
       return nullptr;
     }
   }
@@ -719,12 +718,14 @@ Value *BinaryExpression::codegen() {
 
   Value* R, *L;   // new L and R
 
-  if(lhs->type_info.st.stype != rhs->type_info.st.stype || lhs->type_info.st.ptr_depth != rhs->type_info.st.ptr_depth || lhs->type_info.st.ptr_depth != 0){
+  if (!(get_rank(lhs->type_info.st.stype) == get_rank(rhs->type_info.st.stype) && 
+        lhs->type_info.st.ptr_depth == rhs->type_info.st.ptr_depth && 
+        lhs->type_info.st.ptr_depth == 0)){
     if (lhs->type_info.st.ptr_depth == 0 &&  rhs->type_info.st.ptr_depth == 0) {
       widen_expression(lhs, rhs, oldL, oldR, &L, &R);
     }
     else{
-      cout<<"Type mismatch"<<endl;
+      ehdl::err("type mismatch", pos);
       return nullptr;
     }
   }
@@ -782,10 +783,14 @@ Value *BinaryExpression::codegen() {
       return handleNE(L, R, lhs->type_info.st.stype);
     case OP_BOOL_AND:
       type_info.st.stype = I1;
-      return handleBAnd(L, R, lhs->type_info.st.stype);
+      return handleBAnd(narrowToBool(L, lhs->type_info.st.stype, getType(lhs->type_info.st.stype, 0)), 
+                        narrowToBool(R, rhs->type_info.st.stype, getType(rhs->type_info.st.stype, 0)), 
+                        lhs->type_info.st.stype);
     case OP_BOOL_OR:
       type_info.st.stype = I1;
-      return handleBOr(L, R, lhs->type_info.st.stype);
+      return handleBOr(narrowToBool(L, lhs->type_info.st.stype, getType(lhs->type_info.st.stype, 0)), 
+                       narrowToBool(R, rhs->type_info.st.stype, getType(rhs->type_info.st.stype, 0)), 
+                       lhs->type_info.st.stype);
     case OP_AND:
       type_info.st.stype = lhs->type_info.st.stype;
       return handleAnd(L, R, lhs->type_info.st.stype);
@@ -821,6 +826,47 @@ Value* UnaryExpression::codegen(){
       type_info.st.ptr_depth++;  
       type_info.is_ref = false;
       return R;
+    case OP_UNARY_PLUS: return R;
+    case OP_UNARY_MINUS:
+      R = expr->codegen();
+      type_info = expr->type_info;
+      if (expr->type_info.st.ptr_depth != 0) { 
+        ehdl::err("Pointer depth of unary expression should be zero", pos); 
+        return nullptr; 
+      }
+      type_info.st.ptr_depth = 0;
+      type_info.is_ref = false;
+      if (is_int_type(type_info.st.stype)) return llvm_builder->CreateNeg(R, "uminus");
+      else if (is_fp_type(type_info.st.stype)) return llvm_builder->CreateFNeg(R, "uminus");
+      else {
+        ehdl::err("Can't negate this type", pos);
+        return nullptr;
+      }
+    case OP_BOOL_NOT:
+      R = expr->codegen();
+      if (expr->type_info.st.ptr_depth != 0) {
+        ehdl::err("Pointer depth of unary expression should be zero", pos); 
+        return nullptr;
+      }
+      R = narrowToBool(R, expr->type_info.st.stype, getType(expr->type_info.st.stype, 0));
+      type_info.st.stype = I1;
+      type_info.st.ptr_depth = 0;
+      type_info.is_ref = false;
+      return llvm_builder->CreateNot(R, "not");
+    case OP_NOT:
+      R = expr->codegen();
+      type_info = expr->type_info;
+      if (expr->type_info.st.ptr_depth != 0) {
+        ehdl::err("Pointer depth of unary expression should be zero", pos); 
+        return nullptr;
+      }
+      type_info.st.ptr_depth = 0;
+      type_info.is_ref = false;
+      if (is_int_type(type_info.st.stype)) return llvm_builder->CreateNot(R, "not");
+      else if (is_fp_type(type_info.st.stype)) {
+        ehdl::err("Can't take binary NOT of a floating point", pos); 
+        return nullptr;
+      }
     default:
       cout<<"Type mismatch"<<endl;
       return nullptr;
@@ -850,8 +896,16 @@ Value* UnaryExpression::get_address(){
 
 Value* ReturnStatement::codegen(){
   Value* ret_val = ret_expr->codegen();
-  return llvm_builder->CreateRet(ret_val);
-
+  if (get_rank(ret_expr->type_info.st.stype) == get_rank(func_ret_st.stype) && 
+      ret_expr->type_info.st.ptr_depth == func_ret_st.ptr_depth) return llvm_builder->CreateRet(ret_val);
+  else if (func_ret_st.ptr_depth == 0 && ret_expr->type_info.st.ptr_depth == 0) {
+    // convert
+    return llvm_builder->CreateRet(convertForInit(func_ret_st.stype, ret_expr, ret_val));
+  }
+  else {
+    ehdl::err("Return type doesn't match for function", pos);
+    return nullptr;
+  }
 }
 
 
@@ -902,6 +956,7 @@ llvm::Function *Function::codegen() {
   // Uncommenting this causes a segfault !?
   // cdebug << "Generating function code " << func_decl->ident->name << endl;
   std::string func_name = func_decl->ident->name;
+  func_ret_st = func_decl->ident->ident_info;
   int num_args = 0;
   if(params){
     num_args = params->params->size();
@@ -943,7 +998,7 @@ llvm::Function *Function::codegen() {
     llvm_builder->SetInsertPoint(block);
     llvm_st.clear();
     int i = 0;
-  for (auto &Arg : func->args()) {
+    for (auto &Arg : func->args()) {
 
       AllocaInst *Alloca = CreateEntryBlockAlloca(func, (*(params->params))[i]->decl_specs,  (*(params->params))[i]->ptr_depth , (*(params->params))[i]->ident);
 
@@ -953,7 +1008,7 @@ llvm::Function *Function::codegen() {
       llvm_st[getVarName((*(params->params))[i]->ident, "l")] = Alloca;
       i++;
     }
-    
+      
     Value *ret_val = stmts->codegen();
     if(ret_val){
       // add a return statement
@@ -984,7 +1039,7 @@ Value* Identifier::codegen(){
   AllocaInst* A;
   int idx = ident_info.idx;
   if(idx < 0){
-    cout<<idx<<"GLOVAL"<<endl;
+    // cout<<idx<<"GLOVAL"<<endl;
     GlobalVariable* A = global_st[ name /*getVarName(this, "g")*/];
     type_info.st= ident_info;
     type_info.is_ref = true;
@@ -1089,7 +1144,7 @@ Value* WhileStatement::codegen(){
     llvm_builder->SetInsertPoint(CondBB);
 
     // Compute the end condition.
-    Value *Cond = cond->codegen();
+    Value *Cond = narrowToBool(cond->codegen(), cond->type_info.st.stype, getType(cond->type_info.st.stype, 0));
     llvm_builder->CreateCondBr(Cond, LoopBB, AfterBB);
 
     llvm_builder->SetInsertPoint(LoopBB);

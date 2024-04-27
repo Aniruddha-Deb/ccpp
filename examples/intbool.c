@@ -15,7 +15,7 @@ int main() {
     float pz = 0.f, nz = -0.f;
     float notz = 1.f;
 
-    if (a && b) printf("logical and\n");
+    if (getint(5) && getint(2)) printf("logical and\n");
     if (pz) printf("Positive Zero!\n");
     if (getfloat(nz) + 1.0  + (getfloat(notz) == getfloat(notz))) printf("Negative Zero!\n");
     if (getfloat(notz) + 1.0) printf("Not zero\n");

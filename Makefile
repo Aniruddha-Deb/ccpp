@@ -31,7 +31,7 @@ LINE:="-----------------------------------------------------------------------"
 cc: src/c.tab.cpp src/c.lex.cpp $(OBJ)
 	$(CPPC) -std=c++17 $(OBJ) $(INCLUDE) $(LDFLAGS) $(DEBUG) -o $@
 
-test: cc $(TESTOBJ) $(TESTLL)
+test: cleantest cc $(TESTOBJ) $(TESTLL)
 
 test/clang/%: examples/%.c
 	$(CC) -std=c11 $< -o $@
@@ -59,9 +59,11 @@ src/c.tab.cpp: src/c.y
 src/c.lex.cpp: src/c.l src/c.tab.hpp
 	flex -o src/c.lex.cpp -l src/c.l
 
-clean:
+cleantest:
+	rm -f test/cc/* test/clang/*
+
+clean: cleantest
 	rm -f bin/*
 	rm -f src/c.tab.* src/c.lex.*
-	rm -f test/clang/* test/cc/*
 
 .PHONY: test clean

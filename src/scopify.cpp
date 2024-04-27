@@ -68,7 +68,7 @@ void Literal::scopify() {
 
 void ExpressionStatement::scopify() {
   cdebug << "ExpressionStatement::scopify: " << endl;
-  expr->scopify();
+  if (expr) expr->scopify();
 }
 
 void IfStatement::scopify() {
@@ -93,7 +93,7 @@ void WhileStatement::scopify() {
   cdebug << "WhileStatement::scopify: " << endl;
   cond->scopify();
   table->enter_scope();
-  stmt->scopify();
+  if (stmt) stmt->scopify();
   table->exit_scope();
 }
 
@@ -193,6 +193,7 @@ void Function::scopify() {
   std::string name = func_decl->ident->name;
   cdebug << "Function::scopify: " << name << endl;
   table->add_symbol(name, {-1, func_decl->ptr_depth, typespecs2st(func_decl->decl_specs->type_specs)});
+  func_decl->ident->scopify();
   cdebug<<"Function decl assigned type "<<typespecs2st(func_decl->decl_specs->type_specs)<<" ptr depth "<<func_decl->ptr_depth<<endl;
   table->reset_symb_identifier();
   table->enter_scope();

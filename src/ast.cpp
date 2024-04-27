@@ -446,7 +446,7 @@ void assign_literals(SymbolType lhstype, Literal* rhslit) {
         case LT_DOUBLE: 
           if (lhstype == FP32) {
             rhslit->data.f = float(rhslit->data.d); 
-            cout << rhslit->data.f << endl;
+            // cout << rhslit->data.f << endl;
           }
           else{
             rhslit->data.l = floor(rhslit->data.d);
@@ -626,6 +626,14 @@ void boolnot_literal(Literal* l) {
   l->ltype = LT_BOOL;
 }
 
+void not_literal(Literal* l) {
+  if (l->ltype == LT_FLOAT || l->ltype == LT_DOUBLE) ehdl::err("Can't take xor of floating point literals", l->pos);
+  else if (l->ltype == LT_CHAR) l->data.c = ~l->data.c;
+  else if (l->ltype == LT_SHORT) l->data.s = ~l->data.s;
+  else if (l->ltype == LT_INT32 || l->ltype == LT_UINT32) l->data.i = ~l->data.i;
+  else l->data.l = ~l->data.l;
+}
+
 void negate_literal_value(Literal* l) {
   if (l->ltype == LT_CHAR) l->data.c *= -1;
   else if (l->ltype == LT_SHORT) l->data.s *= -1;
@@ -644,9 +652,7 @@ Expression* FoldConstants(Expression* expr){
   BinaryExpression* bin_exp;
   UnaryExpression* un_exp;
   if ((bin_exp = dynamic_cast<BinaryExpression*>(expr))) {
-    cout << "binary expression" << endl;
     Expression* result = allocateBinaryExpression(FoldConstants(bin_exp->lhs), bin_exp->op, FoldConstants(bin_exp->rhs));
-    cout << dynamic_cast<Literal*> (result);
     return result;
   }
   else if((un_exp = dynamic_cast<UnaryExpression*>(expr))){
@@ -722,6 +728,8 @@ Expression* allocateUnaryExpression(Operator op, Expression* expr) {
     switch(op) {
       case OP_UNARY_PLUS: return lit;
       case OP_UNARY_MINUS: negate_literal_value(lit); return lit;
+      case OP_BOOL_NOT: boolnot_literal(lit); return lit;
+      case OP_NOT: not_literal(lit); return lit;
       default: return new UnaryExpression(op, expr);
     }
   }

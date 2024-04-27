@@ -1,12 +1,11 @@
-void* malloc(unsigned long size);
-void free(void* ptr);
+char* malloc(unsigned int size);
+void free(char* ptr);
 
 int printf(const char *format, ...);
 
 int main() {
     char *s = malloc(14);
-    s = "Hello World!\n";
-    s[13] = 0;
+    *s = 'b';
     printf(s);
     free(s);
     return 0;

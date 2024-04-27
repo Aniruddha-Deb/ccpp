@@ -106,7 +106,9 @@ Statement* WhileStatement::const_prop(){
         }
         cond = litcond;
     }
-    stmt = stmt->const_prop();
+    if (stmt) {
+      stmt = stmt->const_prop();
+    }
     constant_table.clear_values();
     return this;
 }
@@ -120,6 +122,7 @@ void WhileStatement::remove_pointers(){
 Statement* ExpressionStatement::const_prop(){
 
     
+  if (!expr) return this;
     expr = expr->const_prop();  // delete old exp?
     
     expr = FoldConstants(expr);
@@ -148,10 +151,10 @@ Statement* DeclarationStatement::const_prop(){
                 // cout << (*decl->decl_list)[i]->ident->ident_info.idx << endl;
                 Literal* initlit = dynamic_cast<Literal*> (((*(decl->decl_list))[i]->init_expr)->copy_exp());
                 if (!(*decl->decl_list)[i]->ident->ident_info.ptr_depth){
-                    cout << (*decl->decl_list)[i]->ident->name<<endl;
+                    // cout << (*decl->decl_list)[i]->ident->name<<endl;
                     assign_literals(((*decl->decl_list)[i]->ident->ident_info.stype), (initlit));
                     constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx,(initlit));
-                    cout<<initlit->ltype << " "<<initlit->data.d << endl;
+                    // cout<<initlit->ltype << " "<<initlit->data.d << endl;
                 }
                 else{
                      constant_table.update_value((*decl->decl_list)[i]->ident->ident_info.idx, nullptr) ;
@@ -221,7 +224,7 @@ Expression* BinaryExpression::const_prop(){
             Literal* rhslit =dynamic_cast<Literal*> (rhs);
             if (rhslit) {
                 if(!(ident->ident_info.ptr_depth)){
-                    cout << ident->name << endl;
+                    // cout << ident->name << endl;
                     assign_literals(ident->ident_info.stype, rhslit);
                     constant_table.update_value(ident->ident_info.idx, rhslit );
                 }
@@ -403,7 +406,7 @@ void Statement::remove_pointers(){
 }
 
 void ExpressionStatement::remove_pointers(){
-    expr->remove_pointers();
+  if (expr) expr->remove_pointers();
     return;
 }
 
