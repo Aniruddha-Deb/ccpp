@@ -500,7 +500,7 @@ llvm::Value* Declaration::codegen(){
       // cout << "START DECL\n";
       Value* init_val = init_decl->init_expr->codegen();
       // cout << "EXPR GEN\n";
-      if ((init_decl->init_expr->type_info.st.stype != init_decl->ident->ident_info.stype) 
+      if (get_rank(init_decl->init_expr->type_info.st.stype) != get_rank(init_decl->ident->ident_info.stype) 
           && !(init_decl->init_expr->type_info.st.ptr_depth) && !(init_decl->ptr_depth)){
           // cout << "IF" << endl;
 
