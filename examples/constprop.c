@@ -1,5 +1,7 @@
 int foo(int var, int* ptr);
 
+void printf(char* format, ...);
+
 int main(){
     // int x = 5, y =10 * x, z, w;
     // z = x;
@@ -29,5 +31,6 @@ int main(){
     e += a + b + c;
     b = (a = 2 + 3) + (b = a = a + 1);
     c = a + b;
+    printf("%d %d %d %d %d",a , b, c, e, f);
     // a = a + (a = a + 1);
 }

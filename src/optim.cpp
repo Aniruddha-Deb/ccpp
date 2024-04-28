@@ -229,6 +229,9 @@ Expression* BinaryExpression::const_prop(){
                     constant_table.update_value(ident->ident_info.idx, rhslit );
                 }
             }
+            else{
+                constant_table.invalidate_value(ident->ident_info.idx);
+            }
             
         }
         else{
