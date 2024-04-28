@@ -33,6 +33,16 @@ cc: mkbindir src/c.tab.cpp src/c.lex.cpp $(OBJ)
 
 test: cleantest cc $(TESTOBJ) $(TESTLL)
 
+submit:
+	mkdir -p final
+	rm -rf final/*
+	cp -r src final/
+	cp -r examples final/
+	cp -r include final/
+	cp Makefile final/
+	cp README.md final/
+	zip -r 2020CS10869_2021CS10074 final
+
 test/clang/%: examples/%.c
 	$(CC) -std=c11 $< -o $@
 
