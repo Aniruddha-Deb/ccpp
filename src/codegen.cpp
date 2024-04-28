@@ -796,12 +796,12 @@ Value *BinaryExpression::codegen() {
       type_info.st.stype = I1;
       return handleBAnd(narrowToBool(L, lhs->type_info.st.stype, getType(lhs->type_info.st.stype, 0)), 
                         narrowToBool(R, rhs->type_info.st.stype, getType(rhs->type_info.st.stype, 0)), 
-                        lhs->type_info.st.stype);
+                        I1);
     case OP_BOOL_OR:
       type_info.st.stype = I1;
       return handleBOr(narrowToBool(L, lhs->type_info.st.stype, getType(lhs->type_info.st.stype, 0)), 
                        narrowToBool(R, rhs->type_info.st.stype, getType(rhs->type_info.st.stype, 0)), 
-                       lhs->type_info.st.stype);
+                       I1);
     case OP_AND:
       type_info.st.stype = lhs->type_info.st.stype;
       return handleAnd(L, R, lhs->type_info.st.stype);
