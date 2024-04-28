@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
   int ret = yyparse(tu);
 
   if (ret != 0) {
+    ehdl::print_errs();
     cout << "Error: parse error. Not proceeding with further steps" << endl;
     delete tu;
     return 0;
@@ -63,12 +64,6 @@ int main(int argc, char **argv) {
   tu->const_prop();
 
   cdebug << "optimization done" << endl;
-
-  // tu->dump_ast();
-
-  // std::cout << tu->dump_ast("") << std::endl;
-
-  // printf("retv = %d\n", ret);
 
   string code = tu->codegen();
 

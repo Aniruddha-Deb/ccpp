@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include "ast.hpp"
+#include "error.hpp"
 using namespace std;
 
 // stuff from flex that bison needs to know about:
@@ -17,6 +18,7 @@ void setpos(ast::Node *n, void* info);
 %}
 
 %parse-param {ast::TranslationUnit* tu}
+%define parse.error verbose
 
 %union {
     ast::TranslationUnit*  ast_translation_unit;
@@ -129,8 +131,8 @@ void setpos(ast::Node *n, void* info);
 
 primary_expression
     : IDENTIFIER { $$ = new ast::Identifier($1); setpos($$, &@$); }
-    | constant { $$ = $1; setpos($$, &@$); }
-    | string { $$ = $1; setpos($$, &@$); }
+    | constant { $$ = $1; }
+    | string { $$ = $1; }
     | '(' expression ')' { $$ = $2; setpos($$, &@$); }
     ;
 
@@ -144,7 +146,7 @@ string
     ;
 
 postfix_expression
-    : primary_expression { $$ = $1; setpos($$, &@$); } // lvalue
+    : primary_expression { $$ = $1; } // lvalue
     | postfix_expression '[' expression ']' // lvalue, not handled
     | postfix_expression '(' ')' { $$ = new ast::FunctionInvocationExpression($1); setpos($$, &@$); }
     | postfix_expression '(' argument_expression_list ')' { $$ = new ast::FunctionInvocationExpression($1, $3); setpos($$, &@$); }
@@ -160,7 +162,7 @@ argument_expression_list
     ;
 
 unary_expression
-    : postfix_expression { $$ = $1; setpos($$, &@$); }
+    : postfix_expression { $$ = $1; }
     | INC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_INCR, $2); setpos($$, &@$); } // rvalue
     | DEC_OP unary_expression { $$ = ast::allocateUnaryExpression(ast::OP_PRE_DECR, $2); setpos($$, &@$); } // rvalue
     | unary_operator unary_expression { $$ = ast::allocateUnaryExpression($1, $2); setpos($$, &@$); }
@@ -176,26 +178,26 @@ unary_operator
     ;
 
 multiplicative_expression
-    : unary_expression { $$ = $1; setpos($$, &@$); }
+    : unary_expression { $$ = $1; }
     | multiplicative_expression '*' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MUL, $3); setpos($$, &@$); }
     | multiplicative_expression '/' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_DIV, $3); setpos($$, &@$); }
     | multiplicative_expression '%' unary_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_MOD, $3); setpos($$, &@$); }
     ;
 
 additive_expression
-    : multiplicative_expression { $$ = $1; setpos($$, &@$); }
+    : multiplicative_expression { $$ = $1; }
     | additive_expression '+' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_ADD, $3); setpos($$, &@$); }
     | additive_expression '-' multiplicative_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SUB, $3); setpos($$, &@$); }
     ;
 
 shift_expression
-    : additive_expression { $$ = $1; setpos($$, &@$); }
+    : additive_expression { $$ = $1; }
     | shift_expression LEFT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LSHIFT, $3); setpos($$, &@$); }
     | shift_expression RIGHT_OP additive_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_RSHIFT, $3); setpos($$, &@$); }
     ;
 
 relational_expression
-    : shift_expression { $$ = $1; setpos($$, &@$); }
+    : shift_expression { $$ = $1; }
     | relational_expression '<' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LT, $3); setpos($$, &@$); }
     | relational_expression '>' shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_GT, $3); setpos($$, &@$); }
     | relational_expression LE_OP shift_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_LE, $3); setpos($$, &@$); }
@@ -203,43 +205,43 @@ relational_expression
     ;
 
 equality_expression
-    : relational_expression { $$ = $1; setpos($$, &@$); }
+    : relational_expression { $$ = $1; }
     | equality_expression EQ_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_EQ, $3); setpos($$, &@$); }
     | equality_expression NE_OP relational_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_NE, $3); setpos($$, &@$); }
     ;
 
 and_expression
-    : equality_expression { $$ = $1; setpos($$, &@$); }
+    : equality_expression { $$ = $1; }
     | and_expression '&' equality_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_AND, $3); setpos($$, &@$); }
     ;
 
 exclusive_or_expression
-    : and_expression { $$ = $1; setpos($$, &@$); }
+    : and_expression { $$ = $1; }
     | exclusive_or_expression '^' and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_XOR, $3); setpos($$, &@$); }
     ;
 
 inclusive_or_expression
-    : exclusive_or_expression { $$ = $1; setpos($$, &@$); }
+    : exclusive_or_expression { $$ = $1; }
     | inclusive_or_expression '|' exclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_OR, $3); setpos($$, &@$); }
     ;
 
 logical_and_expression
-    : inclusive_or_expression { $$ = $1; setpos($$, &@$); }
+    : inclusive_or_expression { $$ = $1; }
     | logical_and_expression AND_OP inclusive_or_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_AND, $3); setpos($$, &@$); }
     ;
 
 logical_or_expression
-    : logical_and_expression { $$ = $1; setpos($$, &@$); }
+    : logical_and_expression { $$ = $1; }
     | logical_or_expression OR_OP logical_and_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_BOOL_OR, $3); setpos($$, &@$); }
     ;
 
 conditional_expression
-    : logical_or_expression { $$ = $1; setpos($$, &@$); }
+    : logical_or_expression { $$ = $1; }
     | logical_or_expression '?' expression ':' conditional_expression { $$ = new ast::TernaryExpression($1, $3, $5); setpos($$, &@$); }
     ;
 
 assignment_expression
-    : conditional_expression { $$ = $1; setpos($$, &@$); }
+    : conditional_expression { $$ = $1; }
     | unary_expression assignment_operator assignment_expression { $$ = ast::allocateBinaryExpression($1, $2, $3); setpos($$, &@$); }
     ;
 
@@ -258,12 +260,12 @@ assignment_operator
     ;
 
 expression
-    : assignment_expression { $$ = $1; setpos($$, &@$); }
+    : assignment_expression { $$ = $1; }
     | expression ',' assignment_expression { $$ = ast::allocateBinaryExpression($1, ast::OP_SEQ, $3); setpos($$, &@$); }
     ;
 
 constant_expression
-	: conditional_expression { $$ = $1; setpos($$, &@$); } /* with constraints - should we implement those? */
+	: conditional_expression { $$ = $1; } /* with constraints - should we implement those? */
 	;
 
 /* -Declarations------------------------------------------------------------- */
@@ -272,7 +274,6 @@ declaration
 	: declaration_specifiers ';' { $$ = new ast::Declaration($1, nullptr); setpos($$, &@$); }      /* idk just put nullptr here TODO */
 	| declaration_specifiers init_declarator_list ';' { $$ = new ast::Declaration($1, $2); setpos($$, &@$); }
 	;
-
 
 declaration_specifiers
 	: storage_class_specifier declaration_specifiers { $2->add_storage_specifier($1); $$ = $2; setpos($$, &@$); }
@@ -435,8 +436,8 @@ function_declaration
 
 void yyerror(ast::TranslationUnit* tu, const char *s)
 {
-	fflush(stdout);
-	fprintf(stderr, "*** %s\n", s);
+  YYLTYPE info = yylloc;
+  ehdl::err(s, {info.first_line, info.last_line, info.first_column, info.last_column});
 }
 
 

@@ -1,6 +1,6 @@
 
 
-void printf(const char* format, ...);
+int printf(const char* format, ...);
 
 int main(){
     int i = 0, j;

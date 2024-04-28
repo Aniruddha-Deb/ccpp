@@ -568,12 +568,12 @@ void ne_literals(Literal* lhs, Literal* rhs) {
 }
 
 void and_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take and of floating point literals", lhs->pos);
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take and of floating point literals", rhs->pos);
   else lhs->data.l &= rhs->data.l;
 }
 
 void or_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take or of floating point literals", lhs->pos);
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take or of floating point literals", rhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c |= rhs->data.c;
   else if (lhs->ltype == LT_SHORT) lhs->data.s |= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i |= rhs->data.i;
@@ -581,7 +581,7 @@ void or_literals(Literal* lhs, Literal* rhs) {
 }
 
 void xor_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take xor of floating point literals", lhs->pos);
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't take xor of floating point literals", rhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c ^= rhs->data.c;
   else if (lhs->ltype == LT_SHORT) lhs->data.s ^= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i ^= rhs->data.i;
@@ -589,7 +589,7 @@ void xor_literals(Literal* lhs, Literal* rhs) {
 }
 
 void lshift_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't left shift floating point literals", lhs->pos);
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't left shift floating point literals", rhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c <<= rhs->data.c;
   else if (lhs->ltype == LT_SHORT) lhs->data.s <<= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i <<= rhs->data.i;
@@ -597,7 +597,7 @@ void lshift_literals(Literal* lhs, Literal* rhs) {
 }
 
 void rshift_literals(Literal* lhs, Literal* rhs) {
-  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't right shift floating point literals", lhs->pos);
+  if (lhs->ltype == LT_FLOAT || lhs->ltype == LT_DOUBLE) ehdl::err("Can't right shift floating point literals", rhs->pos);
   else if (lhs->ltype == LT_CHAR) lhs->data.c >>= rhs->data.c;
   else if (lhs->ltype == LT_SHORT) lhs->data.s >>= rhs->data.s;
   else if (lhs->ltype == LT_INT32 || lhs->ltype == LT_UINT32) lhs->data.i >>= rhs->data.i;
@@ -627,7 +627,7 @@ void boolnot_literal(Literal* l) {
 }
 
 void not_literal(Literal* l) {
-  if (l->ltype == LT_FLOAT || l->ltype == LT_DOUBLE) ehdl::err("Can't take xor of floating point literals", l->pos);
+  if (l->ltype == LT_FLOAT || l->ltype == LT_DOUBLE) ehdl::err("Can't take not of floating point literals", l->pos);
   else if (l->ltype == LT_CHAR) l->data.c = ~l->data.c;
   else if (l->ltype == LT_SHORT) l->data.s = ~l->data.s;
   else if (l->ltype == LT_INT32 || l->ltype == LT_UINT32) l->data.i = ~l->data.i;

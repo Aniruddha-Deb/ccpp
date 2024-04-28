@@ -1,5 +1,6 @@
 #include <iostream>
 #include "symtab.hpp"
+#include "error.hpp"
 
 using namespace std;
 
@@ -16,7 +17,7 @@ void SymbolTable::exit_scope(){
   // cout<<"EXITSCOPE\n";
   depth--;
   if(scopestack.empty()){
-    cout<<"PANIC EXIT_SCOPE\n"<<endl;
+    ehdl::err("Scope stack is empty while exiting scope", {});
   }
   else{
     scopestack.pop();
@@ -26,7 +27,7 @@ void SymbolTable::exit_scope(){
 bool SymbolTable::check_scope(string x){
   // cout<<"CHECK:"<<x<<"->"<<endl;
   if(scopestack.empty()){
-    cout<<"PANIC CHECK_SCOPE\n";
+    ehdl::err("Scope stack is empty while checking scope", {});
     return false; // can remove ig
   }
   else{
@@ -45,7 +46,7 @@ SymbolInfo SymbolTable::find_symbol(string x){
     }
     copystack.pop();
   }
-  return {-1, UNK};
+  return {-1, 0, UNK};
 }
 
 void SymbolTable::reset_symb_identifier() {
@@ -53,9 +54,8 @@ void SymbolTable::reset_symb_identifier() {
 }
 
 void SymbolTable::add_symbol(string x, SymbolInfo info){
-  // cout<<"ADD:"<<x<<"->"<<endl;
   if(check_scope(x)){
-    cout<<"PANIC ADD_SYMBOL\n";
+    ehdl::err("Symbol " + x + " already exists in scope", {});
   }
   else{
     if(depth == 1){

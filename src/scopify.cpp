@@ -29,6 +29,9 @@ SymbolType typespecs2st(std::set<TypeSpecifier> type_specs) {
 void Identifier::scopify() {
   cdebug << "Identifier::scopify: " << endl;
   ident_info = table->find_symbol(name);
+  if (ident_info.stype == UNK) {
+    ehdl::err("Use of undeclared identifier " + name, pos);
+  }
   // cout << name << " ";
   // cout << ident_info.ptr_depth << endl;
 }
