@@ -110,6 +110,14 @@ Value* handleDiv(Value* L, Value* R, SymbolType ty) {
   else return nullptr;
 }
 
+Value* handleModulo(Value* L, Value* R, SymbolType ty) {
+  if (is_signed_int_type(ty)) return llvm_builder->CreateSRem(L, R, "temp");
+  else if (is_unsigned_int_type(ty)) return llvm_builder->CreateURem(L, R, "temp");
+  else if (is_fp_type(ty)) return llvm_builder->CreateFRem(L, R, "temp");
+  else return nullptr;
+}
+
+
 Value* handleGE(Value* L, Value* R, SymbolType ty) {
   if (is_signed_int_type(ty)) return llvm_builder->CreateICmpSGE(L, R, "temp");
   else if (is_unsigned_int_type(ty)) return llvm_builder->CreateICmpUGE(L, R, "temp");
@@ -757,6 +765,9 @@ Value *BinaryExpression::codegen() {
     case OP_DIV:
       type_info.st.stype = lhs->type_info.st.stype;
       return handleDiv(L, R, lhs->type_info.st.stype);
+    case OP_MOD:
+      type_info.st.stype = lhs->type_info.st.stype;
+      return handleModulo(L, R, lhs->type_info.st.stype);
     case OP_LSHIFT:
       type_info.st.stype = lhs->type_info.st.stype;
       return handleLshift(L, R, lhs->type_info.st.stype);
@@ -1039,7 +1050,7 @@ Value* Identifier::codegen(){
   AllocaInst* A;
   int idx = ident_info.idx;
   if(idx < 0){
-    // cout<<idx<<"GLOVAL"<<endl;
+    // cout<<idx<<"GLOVAL"<<endl;f
     GlobalVariable* A = global_st[ name /*getVarName(this, "g")*/];
     type_info.st= ident_info;
     type_info.is_ref = true;
@@ -1061,40 +1072,38 @@ Value* Identifier::codegen(){
 // control flow
 
 Value *IfStatement::codegen() {
-  Value *CondV = cond->codegen();
-  CondV = narrowToBool(CondV, cond->type_info.st.stype, getType(cond->type_info.st.stype, 0));
+  Value *condval = cond->codegen();
+  condval = narrowToBool(condval, cond->type_info.st.stype, getType(cond->type_info.st.stype, 0));
   cond->type_info.st.stype = I1;
-  if (!CondV || cond->type_info.st.stype != I1) // sus
+  if (!condval || cond->type_info.st.stype != I1) // sus
     return nullptr;
 
 
   llvm::Function *func = llvm_builder->GetInsertBlock()->getParent();
 
-  // Create blocks for the then and else cases.  Insert the 'then' block at the
-  // end of the function.
- 
+
 
   if (true_branch) {
-    BasicBlock *ThenBB = BasicBlock::Create(*llvm_ctx, "then", func);
-    BasicBlock *ElseBB = BasicBlock::Create(*llvm_ctx, "else");
-    BasicBlock *MergeBB = BasicBlock::Create(*llvm_ctx, "ifcont");
-    llvm_builder->CreateCondBr(CondV, ThenBB, ElseBB);
+    BasicBlock *trueb = BasicBlock::Create(*llvm_ctx, "then", func);
+    BasicBlock *falseb = BasicBlock::Create(*llvm_ctx, "else");
+    BasicBlock *afterb = BasicBlock::Create(*llvm_ctx, "ifcont");
+    llvm_builder->CreateCondBr(condval, trueb, falseb);
 
-    llvm_builder->SetInsertPoint(ThenBB);
+    llvm_builder->SetInsertPoint(trueb);
 
     if (true_branch) {
-      Value *ThenV = true_branch->codegen();
+      Value *temp = true_branch->codegen();          // useless?
     }
 
-    llvm_builder->CreateBr(MergeBB);
-    ThenBB = llvm_builder->GetInsertBlock();
+    llvm_builder->CreateBr(afterb);
+    trueb = llvm_builder->GetInsertBlock();
 
-    func->getBasicBlockList().push_back(ElseBB);
-    llvm_builder->SetInsertPoint(ElseBB);
-    Value *ElseV = nullptr;
+    func->getBasicBlockList().push_back(falseb);
+    llvm_builder->SetInsertPoint(falseb);
+    Value *falsetemp = nullptr;
     if(false_branch){
       cdebug << "non empty else" << endl;
-      ElseV = false_branch->codegen();
+      falsetemp = false_branch->codegen();
     }
     else{
       cdebug << "empty else" << endl;
@@ -1102,57 +1111,48 @@ Value *IfStatement::codegen() {
 
     
 
-    llvm_builder->CreateBr(MergeBB);
-    ElseBB = llvm_builder->GetInsertBlock();
+    llvm_builder->CreateBr(afterb);
+    falseb = llvm_builder->GetInsertBlock();
 
-    func->getBasicBlockList().push_back(MergeBB);
-    llvm_builder->SetInsertPoint(MergeBB);
+    func->getBasicBlockList().push_back(afterb);
+    llvm_builder->SetInsertPoint(afterb);              // continue 
   }
   else{
-    Value *ElseV = nullptr;
+    Value *falsetemp = nullptr;                
     if(false_branch){
       cdebug << "non empty else" << endl;
-      ElseV = false_branch->codegen();
+      falsetemp = false_branch->codegen();      // no branches required, just codegen condition and false branch
     }
     else{
       cdebug << "empty else" << endl;
     }
   }
-
-  
-  // PHINode *PN = llvm_builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "iftmp");
-
-  // PN->addIncoming(ThenV, ThenBB);
-  // PN->addIncoming(ElseV, ElseBB);               // PHINODE?
   return nullptr;                                                   // might be a problem during error handling
 }
 
 
 Value* WhileStatement::codegen(){
   llvm::Function *func = llvm_builder->GetInsertBlock()->getParent();
-  // BasicBlock *Cond = llvm_builder->GetInsertBlock();
+
 
   if (stmt) {
-    BasicBlock *CondBB = BasicBlock::Create(*llvm_ctx, "loop_cond", func);
-    BasicBlock *LoopBB = BasicBlock::Create(*llvm_ctx, "loop_body", func);
-    BasicBlock *AfterBB = BasicBlock::Create(*llvm_ctx, "afterloop", func);
+    BasicBlock *condb = BasicBlock::Create(*llvm_ctx, "loop_cond", func);
+    BasicBlock *loopb = BasicBlock::Create(*llvm_ctx, "loop_body", func);
+    BasicBlock *afterb = BasicBlock::Create(*llvm_ctx, "afterloop", func);
 
-    // Insert an explicit fall through from the current block to the LoopBB.
-    llvm_builder->CreateBr(CondBB);
+    llvm_builder->CreateBr(condb);
 
-    // Start insertion in LoopBB.
-    llvm_builder->SetInsertPoint(CondBB);
+    llvm_builder->SetInsertPoint(condb);
 
-    // Compute the end condition.
-    Value *Cond = narrowToBool(cond->codegen(), cond->type_info.st.stype, getType(cond->type_info.st.stype, 0));
-    llvm_builder->CreateCondBr(Cond, LoopBB, AfterBB);
+    Value *condval = narrowToBool(cond->codegen(), cond->type_info.st.stype, getType(cond->type_info.st.stype, 0));
+    llvm_builder->CreateCondBr(condval, loopb, afterb);
 
-    llvm_builder->SetInsertPoint(LoopBB);
+    llvm_builder->SetInsertPoint(loopb);
 
     stmt->codegen();
-    llvm_builder->CreateBr(CondBB);
+    llvm_builder->CreateBr(condb);
 
-    llvm_builder->SetInsertPoint(AfterBB);
+    llvm_builder->SetInsertPoint(afterb);
   }
   else{
     cond->codegen();

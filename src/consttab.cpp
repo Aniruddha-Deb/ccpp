@@ -15,7 +15,7 @@ ast::Literal* ConstTable::get_value(int idx){
 
 void ConstTable::clear_values(){
     for(auto i: value_map){
-        i.second.Value = nullptr;
+        value_map[i.first].Value = nullptr;
     }
 }
 
