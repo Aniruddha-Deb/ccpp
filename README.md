@@ -28,6 +28,6 @@ Optional arguments:
 
 ## About
 
-Credits: Aniruddha Deb, Jaivardhan Singh.
+Credits: Aniruddha Deb (2020CS10869), Jaivardhan Singh (2021CS10074)
 
 Open source libraries used: [argparse](https://github.com/p-ranav/argparse) (MIT license)

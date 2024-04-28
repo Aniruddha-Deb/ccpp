@@ -28,7 +28,7 @@ END:=\033[0m
 GREEN:=\033[0;32m
 LINE:="-----------------------------------------------------------------------"
 
-cc: src/c.tab.cpp src/c.lex.cpp $(OBJ)
+cc: mkbindir src/c.tab.cpp src/c.lex.cpp $(OBJ)
 	$(CPPC) -std=c++17 $(OBJ) $(INCLUDE) $(LDFLAGS) $(DEBUG) -o $@
 
 test: cleantest cc $(TESTOBJ) $(TESTLL)
@@ -38,7 +38,7 @@ test/clang/%: examples/%.c
 
 test/cc/%.ll: examples/%.c test/clang/%
 	@echo "Testing $@"
-	./cc $< -o $@
+	@./cc $< -o $@
 	@if [ "`$(LLI) $@`" != "`./$(word 2,$^)`" ]; then \
 		echo "$(RED)$(BOLD)[X] $@$(END)"; \
 		echo $(LINE); \
@@ -59,7 +59,13 @@ src/c.tab.cpp: src/c.y
 src/c.lex.cpp: src/c.l src/c.tab.hpp
 	flex -o src/c.lex.cpp -l src/c.l
 
-cleantest:
+mkbindir:
+	mkdir -p bin
+
+mktestdir:
+	mkdir -p test test/cc test/clang
+
+cleantest: mktestdir
 	rm -f test/cc/* test/clang/*
 
 clean: cleantest
